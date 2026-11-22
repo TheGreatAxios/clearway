@@ -5,13 +5,18 @@
 //! overflow, visual/DOM reading order reversal, and `prefers-reduced-motion`.
 //! All rules in this module carry the `"clearway"` tag.
 
+use std::collections::HashSet;
+
 use crate::accname::collect_raw_text;
 use crate::aria::is_sequentially_focusable;
-use crate::contrast::{apca_lc, effective_background, effective_foreground, is_large_text};
+use crate::contrast::{
+    apca_lc, composite_over, effective_background, effective_foreground, is_large_text,
+};
 use crate::ir::{Document, NodeId};
 use crate::rule::{Impact, Rule, RuleMeta, Violation};
 use crate::rules::computed::{
-    is_inactive_ui_control_or_label, is_node_or_ancestor_disabled, is_non_text_icon_glyph,
+    effective_gradient_stops, has_effective_background_image, is_inactive_ui_control_or_label,
+    is_node_or_ancestor_disabled, is_non_text_icon_glyph,
 };
 
 pub struct AccessibleAuthentication;
@@ -103,7 +108,7 @@ impl FocusOutlineNone {
         id: "focus-outline-none",
         impact: Impact::Serious,
         wcag: "2.4.7 (AA)",
-        tags: &["cat.keyboard", "wcag2a", "wcag247", "clearway"],
+        tags: &["cat.keyboard", "wcag2aa", "wcag247", "clearway"],
         enabled_by_default: true,
         needs_review: false,
         help: "Focus styles must not remove outlines without a visible replacement",
@@ -186,9 +191,14 @@ fn decls_remove_outline_without_replacement(decls: &str) -> bool {
     removes_outline && !has_replacement
 }
 
+const MAX_CSS_DEPTH: usize = 64;
+
 /// Scans a CSS block (descending into `@media`/`@supports`/`@layer` blocks) and
 /// returns the first offending `:focus` selector that strips outlines.
-fn find_focus_outline_none_selector(css: &str) -> Option<String> {
+fn find_focus_outline_none_selector(css: &str, depth: usize) -> Option<String> {
+    if depth >= MAX_CSS_DEPTH {
+        return None;
+    }
     let bytes = css.as_bytes();
     let len = bytes.len();
     let mut idx = 0usize;
@@ -210,20 +220,20 @@ fn find_focus_outline_none_selector(css: &str) -> Option<String> {
         // Match balanced braces for `{ ... }`.
         idx += 1;
         let body_start = idx;
-        let mut depth = 1usize;
-        while idx < len && depth > 0 {
+        let mut brace_depth = 1usize;
+        while idx < len && brace_depth > 0 {
             match bytes[idx] {
-                b'{' => depth += 1,
-                b'}' => depth -= 1,
+                b'{' => brace_depth += 1,
+                b'}' => brace_depth -= 1,
                 _ => {}
             }
             idx += 1;
         }
-        let body_end = if depth == 0 { idx - 1 } else { idx };
+        let body_end = if brace_depth == 0 { idx - 1 } else { idx };
         let body = &css[body_start..body_end];
 
         if prelude.starts_with('@') {
-            if let Some(found) = find_focus_outline_none_selector(body) {
+            if let Some(found) = find_focus_outline_none_selector(body, depth + 1) {
                 return Some(found);
             }
         } else if selector_has_plain_focus(prelude)
@@ -247,7 +257,7 @@ impl Rule for FocusOutlineNone {
             }
             let raw = collect_raw_text(doc, el.id);
             let cleaned = strip_css_comments(&raw);
-            if let Some(selector) = find_focus_outline_none_selector(&cleaned) {
+            if let Some(selector) = find_focus_outline_none_selector(&cleaned, 0) {
                 out.push(Violation::with_detail(
                     &self.meta(),
                     doc,
@@ -447,11 +457,14 @@ impl ReadingOrderReverse {
 }
 
 fn count_focusable_descendants(doc: &Document, id: NodeId) -> usize {
-    let Some(node) = doc.node(id) else {
-        return 0;
-    };
+    let mut visited = HashSet::new();
+    visited.insert(id);
+    let mut stack: Vec<NodeId> = doc.node(id).map_or_default(|n| n.children.clone());
     let mut count = 0usize;
-    for &cid in &node.children {
+    while let Some(cid) = stack.pop() {
+        if !visited.insert(cid) {
+            continue;
+        }
         let Some(child) = doc.node(cid) else {
             continue;
         };
@@ -461,7 +474,7 @@ fn count_focusable_descendants(doc: &Document, id: NodeId) -> usize {
         if is_sequentially_focusable(child) {
             count += 1;
         }
-        count += count_focusable_descendants(doc, cid);
+        stack.extend(&child.children);
     }
     count
 }
@@ -527,7 +540,9 @@ impl Rule for ApcaContrast {
         Self::META
     }
 
+    #[allow(clippy::too_many_lines)]
     fn run(&self, doc: &Document, out: &mut Vec<Violation>) {
+        let meta = self.meta();
         for el in doc.elements() {
             if !doc.is_in_accessibility_tree(el.id)
                 || !doc.has_direct_text(el.id)
@@ -543,10 +558,6 @@ impl Rule for ApcaContrast {
                 continue;
             }
             let bg = effective_background(doc, el.id);
-            let Some(fg) = effective_foreground(doc, el.id, bg) else {
-                continue;
-            };
-            let lc = apca_lc(fg, bg);
             let size = computed.font_size_px.unwrap_or(16.0);
             let weight = computed.font_weight.unwrap_or(400);
             let threshold = if is_large_text(size, weight) {
@@ -554,22 +565,121 @@ impl Rule for ApcaContrast {
             } else {
                 60.0
             };
+
+            if let Some(stops) = effective_gradient_stops(doc, el.id) {
+                let mut all_pass = true;
+                let mut all_fail = true;
+                let mut min_lc = f64::INFINITY;
+                let mut max_lc = 0.0_f64;
+                let mut evaluated = 0usize;
+
+                for stop in stops {
+                    let backdrop = composite_over(stop, bg);
+                    let Some(foreground) = effective_foreground(doc, el.id, backdrop) else {
+                        continue;
+                    };
+                    let lc_abs = apca_lc(foreground, backdrop).abs();
+                    evaluated += 1;
+                    min_lc = min_lc.min(lc_abs);
+                    max_lc = max_lc.max(lc_abs);
+                    if lc_abs < threshold {
+                        all_pass = false;
+                    } else {
+                        all_fail = false;
+                    }
+                }
+
+                if evaluated > 0 {
+                    if all_pass {
+                        continue;
+                    }
+                    if all_fail {
+                        let bg_image = has_effective_background_image(doc, el.id);
+                        let v = if computed.has_text_shadow || bg_image {
+                            Violation::with_detail(
+                                &meta,
+                                doc,
+                                el.id,
+                                format!(
+                                    "APCA contrast across all CSS gradient stops (|Lc| {min_lc:.1}-{max_lc:.1}) is below minimum {threshold:.0}; requires visual review."
+                                ),
+                            )
+                            .into_incomplete()
+                        } else {
+                            Violation::with_detail(
+                                &meta,
+                                doc,
+                                el.id,
+                                format!(
+                                    "APCA contrast across all CSS gradient stops (|Lc| {min_lc:.1}-{max_lc:.1}) is below minimum {threshold:.0}."
+                                ),
+                            )
+                        };
+                        out.push(v);
+                    } else {
+                        out.push(
+                            Violation::with_detail(
+                                &meta,
+                                doc,
+                                el.id,
+                                format!(
+                                    "APCA contrast across CSS gradient stops ranges from |Lc| {min_lc:.1} to {max_lc:.1} (minimum {threshold:.0}); requires visual review."
+                                ),
+                            )
+                            .into_incomplete(),
+                        );
+                    }
+                    continue;
+                }
+            }
+
+            let Some(fg) = effective_foreground(doc, el.id, bg) else {
+                continue;
+            };
+            let lc = apca_lc(fg, bg);
             if lc.abs() < threshold {
-                out.push(Violation::with_detail(
-                    &self.meta(),
-                    doc,
-                    el.id,
-                    format!(
-                        "APCA contrast |Lc| = {:.1} (Lc {lc:.1}) is below minimum {threshold:.0} (fg rgb({},{},{}), bg rgb({},{},{})).",
-                        lc.abs(),
-                        fg.r,
-                        fg.g,
-                        fg.b,
-                        bg.r,
-                        bg.g,
-                        bg.b
-                    ),
-                ));
+                let bg_image = has_effective_background_image(doc, el.id);
+                let v = if computed.has_text_shadow || bg_image {
+                    let reason = match (computed.has_text_shadow, bg_image) {
+                        (true, true) => "text-shadow and background-image present",
+                        (true, false) => "text-shadow present",
+                        (false, true) => "background-image present",
+                        (false, false) => unreachable!(),
+                    };
+                    Violation::with_detail(
+                        &meta,
+                        doc,
+                        el.id,
+                        format!(
+                            "APCA contrast |Lc| = {:.1} (Lc {lc:.1}) is below minimum {threshold:.0} (fg rgb({},{},{}), bg rgb({},{},{})); {reason}, requires visual review.",
+                            lc.abs(),
+                            fg.r,
+                            fg.g,
+                            fg.b,
+                            bg.r,
+                            bg.g,
+                            bg.b
+                        ),
+                    )
+                    .into_incomplete()
+                } else {
+                    Violation::with_detail(
+                        &meta,
+                        doc,
+                        el.id,
+                        format!(
+                            "APCA contrast |Lc| = {:.1} (Lc {lc:.1}) is below minimum {threshold:.0} (fg rgb({},{},{}), bg rgb({},{},{})).",
+                            lc.abs(),
+                            fg.r,
+                            fg.g,
+                            fg.b,
+                            bg.r,
+                            bg.g,
+                            bg.b
+                        ),
+                    )
+                };
+                out.push(v);
             }
         }
     }

@@ -17,7 +17,7 @@ use crate::aria::{
     native_element_satisfies_attr, prohibited_attrs_for_role, required_attrs_for_role,
     required_children_for_role, required_parent_for_role, validate_aria_attr_value,
 };
-use crate::ir::{Document, Node, NodeId};
+use crate::ir::{Document, MAX_TRAVERSAL_DEPTH, Node, NodeId};
 use crate::rule::{Impact, Rule, RuleMeta, Violation};
 
 pub struct AriaRoles;
@@ -267,18 +267,24 @@ impl Rule for AriaHiddenFocus {
 }
 
 fn has_focusable_in_subtree(doc: &Document, id: NodeId) -> bool {
-    let Some(node) = doc.node(id) else {
-        return false;
-    };
-    if !node.is_element() || !doc.is_rendered(id) || node.has_attr("inert") {
-        return false;
+    let mut visited = HashSet::new();
+    let mut stack = vec![id];
+    while let Some(nid) = stack.pop() {
+        if !visited.insert(nid) {
+            continue;
+        }
+        let Some(node) = doc.node(nid) else {
+            continue;
+        };
+        if !node.is_element() || !doc.is_rendered(nid) || node.has_attr("inert") {
+            continue;
+        }
+        if is_sequentially_focusable(node) {
+            return true;
+        }
+        stack.extend(&node.children);
     }
-    if is_sequentially_focusable(node) {
-        return true;
-    }
-    node.children
-        .iter()
-        .any(|&cid| has_focusable_in_subtree(doc, cid))
+    false
 }
 
 impl DuplicateIdAria {
@@ -494,15 +500,20 @@ impl Rule for AriaAllowedRole {
 }
 
 fn has_figcaption_descendant(doc: &Document, id: NodeId) -> bool {
-    let Some(node) = doc.node(id) else {
-        return false;
-    };
-    for &cid in &node.children {
+    let mut visited = HashSet::new();
+    visited.insert(id);
+    let mut stack: Vec<NodeId> = doc.node(id).map_or_default(|n| n.children.clone());
+    while let Some(cid) = stack.pop() {
+        if !visited.insert(cid) {
+            continue;
+        }
         if let Some(child) = doc.node(cid)
             && child.is_element()
-            && (child.tag == "figcaption" || has_figcaption_descendant(doc, cid))
         {
-            return true;
+            if child.tag == "figcaption" {
+                return true;
+            }
+            stack.extend(&child.children);
         }
     }
     false
@@ -1253,7 +1264,7 @@ impl Rule for AriaRequiredChildren {
             let mut visited = Vec::with_capacity(8);
             visited.push(el.id);
             let (found_required, has_disallowed) =
-                validate_owned_children(doc, el, role, required, &mut visited);
+                validate_owned_children(doc, el, role, required, 0, &mut visited);
             if !found_required || has_disallowed {
                 out.push(Violation::with_detail(
                     &Self::META,
@@ -1302,8 +1313,12 @@ fn validate_owned_children(
     container: &Node,
     parent_role: &str,
     required: &[&str],
+    depth: usize,
     visited: &mut Vec<NodeId>,
 ) -> (bool, bool) {
+    if depth >= MAX_TRAVERSAL_DEPTH {
+        return (false, false);
+    }
     let mut candidate_ids: Vec<NodeId> = container.children.clone();
     if let Some(owns) = container.attr("aria-owns") {
         for ref_id in owns.split_ascii_whitespace() {
@@ -1329,7 +1344,7 @@ fn validate_owned_children(
         visited.push(cid);
         if is_transparent_container(doc, child) {
             let (sub_found, sub_bad) =
-                validate_owned_children(doc, child, parent_role, required, visited);
+                validate_owned_children(doc, child, parent_role, required, depth + 1, visited);
             found_required |= sub_found;
             has_disallowed |= sub_bad;
             continue;
@@ -1346,7 +1361,7 @@ fn validate_owned_children(
         if child_role.is_some_and(|r| required.contains(&r)) {
             if child_role == Some("group") {
                 let (sub_found, sub_bad) =
-                    validate_owned_children(doc, child, parent_role, required, visited);
+                    validate_owned_children(doc, child, parent_role, required, depth + 1, visited);
                 if sub_bad || !sub_found {
                     has_disallowed = true;
                 } else {
@@ -1549,18 +1564,24 @@ impl AriaText {
 }
 
 fn has_aria_text_focusable_in_subtree(doc: &Document, id: NodeId) -> bool {
-    let Some(node) = doc.node(id) else {
-        return false;
-    };
-    if !node.is_element() || !doc.is_rendered(id) || node.has_attr("inert") {
-        return false;
+    let mut visited = HashSet::new();
+    let mut stack = vec![id];
+    while let Some(nid) = stack.pop() {
+        if !visited.insert(nid) {
+            continue;
+        }
+        let Some(node) = doc.node(nid) else {
+            continue;
+        };
+        if !node.is_element() || !doc.is_rendered(nid) || node.has_attr("inert") {
+            continue;
+        }
+        if is_sequentially_focusable(node) || is_natively_focusable(node) {
+            return true;
+        }
+        stack.extend(&node.children);
     }
-    if is_sequentially_focusable(node) || is_natively_focusable(node) {
-        return true;
-    }
-    node.children
-        .iter()
-        .any(|&cid| has_aria_text_focusable_in_subtree(doc, cid))
+    false
 }
 
 impl Rule for AriaText {
@@ -1684,16 +1705,27 @@ impl Rule for AriaValidAttrValue {
 }
 
 fn has_visible_text(doc: &Document, id: NodeId) -> bool {
-    let Some(node) = doc.node(id) else {
-        return false;
-    };
-    if node.is_text() {
-        return !node.text.trim().is_empty();
+    let mut visited = HashSet::new();
+    let mut stack = vec![id];
+    while let Some(nid) = stack.pop() {
+        if !visited.insert(nid) {
+            continue;
+        }
+        let Some(node) = doc.node(nid) else {
+            continue;
+        };
+        if node.is_text() {
+            if !node.text.trim().is_empty() {
+                return true;
+            }
+            continue;
+        }
+        if !node.is_element() || !doc.is_in_accessibility_tree(nid) {
+            continue;
+        }
+        stack.extend(&node.children);
     }
-    if !node.is_element() || !doc.is_in_accessibility_tree(id) {
-        return false;
-    }
-    node.children.iter().any(|&cid| has_visible_text(doc, cid))
+    false
 }
 
 impl PresentationRoleConflict {

@@ -3,11 +3,11 @@
 //! `svg-img-alt`, `role-img-alt`, `object-alt`, `summary-name`,
 //! `image-redundant-alt`, `server-side-image-map`, and `identical-links-same-purpose`.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 use crate::accname::accessible_name;
 use crate::aria::{effective_explicit_role, explicit_role, is_effectively_presentational};
-use crate::ir::{Document, NodeId, normalize_whitespace};
+use crate::ir::{Document, MAX_TRAVERSAL_DEPTH, NodeId, normalize_whitespace};
 use crate::rule::{Impact, Rule, RuleMeta, Violation};
 
 pub struct ImageAlt;
@@ -774,11 +774,28 @@ impl Rule for ImageRedundantAlt {
 }
 
 fn collect_text_excluding_imgs(doc: &Document, id: NodeId) -> String {
+    let mut visited = HashSet::new();
+    visited.insert(id);
+    collect_text_excluding_imgs_inner(doc, id, 0, &mut visited)
+}
+
+fn collect_text_excluding_imgs_inner(
+    doc: &Document,
+    id: NodeId,
+    depth: usize,
+    visited: &mut HashSet<NodeId>,
+) -> String {
+    if depth >= MAX_TRAVERSAL_DEPTH {
+        return String::new();
+    }
     let Some(node) = doc.node(id) else {
         return String::new();
     };
     let mut parts = Vec::new();
     for &cid in &node.children {
+        if !visited.insert(cid) {
+            continue;
+        }
         let Some(child) = doc.node(cid) else {
             continue;
         };
@@ -791,7 +808,7 @@ fn collect_text_excluding_imgs(doc: &Document, id: NodeId) -> String {
         if !child.is_element() || !doc.is_in_accessibility_tree(cid) || child.tag == "img" {
             continue;
         }
-        let sub = collect_text_excluding_imgs(doc, cid);
+        let sub = collect_text_excluding_imgs_inner(doc, cid, depth + 1, visited);
         if !sub.is_empty() {
             parts.push(sub);
         }

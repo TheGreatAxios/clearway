@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 
 use crate::accname::accessible_name;
 use crate::aria::explicit_role;
-use crate::ir::{Document, Node, NodeId};
+use crate::ir::{Document, MAX_TRAVERSAL_DEPTH, Node, NodeId};
 use crate::rule::{Impact, Rule, RuleMeta, Violation};
 
 pub struct LandmarkBannerIsTopLevel;
@@ -369,9 +369,10 @@ impl Rule for Region {
         }
         let mut flags = vec![0u8; doc.nodes.len()];
         let mut computed = vec![false; doc.nodes.len()];
+        let mut visited = vec![false; doc.nodes.len()];
         for &cid in &body.children {
-            compute_region_flags(doc, cid, &mut flags, &mut computed);
-            check_region_subtree(doc, cid, &flags, &self.meta(), out);
+            compute_region_flags(doc, cid, 0, &mut flags, &mut computed);
+            check_region_subtree(doc, cid, 0, &flags, &mut visited, &self.meta(), out);
         }
     }
 }
@@ -403,8 +404,14 @@ fn is_leaf_content_element(node: &Node) -> bool {
     }
 }
 
-fn compute_region_flags(doc: &Document, id: NodeId, flags: &mut [u8], computed: &mut [bool]) -> u8 {
-    if computed.get(id).copied().unwrap_or(true) {
+fn compute_region_flags(
+    doc: &Document,
+    id: NodeId,
+    depth: usize,
+    flags: &mut [u8],
+    computed: &mut [bool],
+) -> u8 {
+    if depth >= MAX_TRAVERSAL_DEPTH || computed.get(id).copied().unwrap_or(true) {
         return flags.get(id).copied().unwrap_or(0);
     }
     computed[id] = true;
@@ -427,7 +434,7 @@ fn compute_region_flags(doc: &Document, id: NodeId, flags: &mut [u8], computed: 
         0
     };
     for &cid in &node.children {
-        node_flags |= compute_region_flags(doc, cid, flags, computed);
+        node_flags |= compute_region_flags(doc, cid, depth + 1, flags, computed);
     }
     flags[id] = node_flags;
     node_flags
@@ -436,10 +443,16 @@ fn compute_region_flags(doc: &Document, id: NodeId, flags: &mut [u8], computed: 
 fn check_region_subtree(
     doc: &Document,
     id: NodeId,
+    depth: usize,
     flags: &[u8],
+    visited: &mut [bool],
     meta: &RuleMeta,
     out: &mut Vec<Violation>,
 ) {
+    if depth >= MAX_TRAVERSAL_DEPTH || visited.get(id).copied().unwrap_or(true) {
+        return;
+    }
+    visited[id] = true;
     let Some(node) = doc.node(id) else {
         return;
     };
@@ -460,6 +473,6 @@ fn check_region_subtree(
         out.push(Violation::from_node(meta, doc, id));
     }
     for &cid in &node.children {
-        check_region_subtree(doc, cid, flags, meta, out);
+        check_region_subtree(doc, cid, depth + 1, flags, visited, meta, out);
     }
 }

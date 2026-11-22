@@ -8,7 +8,9 @@
 //! 4. Visible text subtree (skipping `hidden`, `display: none`, `aria-hidden="true"`)
 //! 5. `title` attribute fallback
 
-use crate::ir::{Document, Node, NodeId, normalize_whitespace};
+use std::collections::HashSet;
+
+use crate::ir::{Document, MAX_TRAVERSAL_DEPTH, Node, NodeId, normalize_whitespace};
 
 /// Computes the W3C `AccName` 1.2 accessible name for `id`.
 pub fn accessible_name(doc: &Document, id: NodeId) -> String {
@@ -23,7 +25,7 @@ fn compute_name(
     allow_hidden: bool,
     visited: &mut Vec<NodeId>,
 ) -> String {
-    if visited.contains(&id) {
+    if visited.len() >= MAX_TRAVERSAL_DEPTH || visited.contains(&id) {
         return String::new();
     }
     let Some(node) = doc.node(id) else {
@@ -323,8 +325,13 @@ fn supports_name_from_content(node: &Node, in_labelledby: bool) -> bool {
 fn selected_option_text(doc: &Document, select: &Node) -> String {
     let mut first_opt: Option<NodeId> = None;
     let mut selected_opt: Option<NodeId> = None;
+    let mut visited: HashSet<NodeId> = HashSet::new();
+    visited.insert(select.id);
     let mut stack: Vec<NodeId> = select.children.iter().rev().copied().collect();
     while let Some(cid) = stack.pop() {
+        if !visited.insert(cid) {
+            continue;
+        }
         let Some(child) = doc.node(cid) else {
             continue;
         };
@@ -358,6 +365,9 @@ fn collect_subtree_text(
     skip_id: Option<NodeId>,
     visited: &mut Vec<NodeId>,
 ) -> String {
+    if visited.len() >= MAX_TRAVERSAL_DEPTH {
+        return String::new();
+    }
     let in_embedded_label = in_labelledby || skip_id.is_some();
     let mut parts = Vec::new();
     for &cid in &parent.children {
@@ -409,7 +419,11 @@ fn collect_subtree_text(
         {
             compute_name(doc, cid, false, allow_hidden, visited)
         } else {
-            collect_subtree_text(doc, child, allow_hidden, in_labelledby, skip_id, visited)
+            visited.push(cid);
+            let sub =
+                collect_subtree_text(doc, child, allow_hidden, in_labelledby, skip_id, visited);
+            visited.pop();
+            sub
         };
         if !piece.is_empty() {
             parts.push(piece);
@@ -420,15 +434,23 @@ fn collect_subtree_text(
 
 /// Collects raw descendant text regardless of visibility (used for `<title>`).
 pub fn collect_raw_text(doc: &Document, id: NodeId) -> String {
-    let Some(node) = doc.node(id) else {
-        return String::new();
-    };
-    if node.is_text() {
-        return node.text.clone();
-    }
     let mut out = String::new();
-    for &cid in &node.children {
-        out.push_str(&collect_raw_text(doc, cid));
+    let mut visited = HashSet::new();
+    let mut stack = vec![id];
+    while let Some(nid) = stack.pop() {
+        if !visited.insert(nid) {
+            continue;
+        }
+        let Some(node) = doc.node(nid) else {
+            continue;
+        };
+        if node.is_text() {
+            out.push_str(&node.text);
+        } else {
+            for &cid in node.children.iter().rev() {
+                stack.push(cid);
+            }
+        }
     }
     out
 }

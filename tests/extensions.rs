@@ -336,3 +336,102 @@ fn prefers_reduced_motion_pass_and_fail() {
     assert_eq!(html_rule_violations(bad, "prefers-reduced-motion"), 1);
     assert_eq!(html_rule_violations(good, "prefers-reduced-motion"), 0);
 }
+
+#[test]
+fn apca_contrast_routes_bg_image_shadow_and_mixed_gradient_to_incomplete() {
+    let options = AuditOptions {
+        include_disabled: true,
+        ..AuditOptions::default()
+    };
+
+    for (label, style) in [
+        (
+            "background-image",
+            ComputedStyle {
+                color: Some(Rgba::opaque(180, 180, 180)),
+                font_size_px: Some(16.0),
+                font_weight: Some(400),
+                has_background_image: true,
+                ..ComputedStyle::default()
+            },
+        ),
+        (
+            "text-shadow",
+            ComputedStyle {
+                color: Some(Rgba::opaque(180, 180, 180)),
+                font_size_px: Some(16.0),
+                font_weight: Some(400),
+                has_text_shadow: true,
+                ..ComputedStyle::default()
+            },
+        ),
+        (
+            "mixed gradient",
+            ComputedStyle {
+                color: Some(Rgba::opaque(255, 255, 255)),
+                font_size_px: Some(16.0),
+                font_weight: Some(400),
+                background_gradient_stops: vec![Rgba::opaque(0, 0, 0), Rgba::opaque(255, 255, 255)],
+                ..ComputedStyle::default()
+            },
+        ),
+    ] {
+        let mut doc = parse_html(
+            "<!doctype html><html lang=\"en\"><head><title>T</title></head><body><p>Overlay text</p></body></html>",
+        );
+        set_computed_for_tag(&mut doc, "p", style);
+        let report = audit_document(&doc, &options);
+        assert!(
+            !report
+                .violations
+                .iter()
+                .any(|v| v.rule_id == "apca-contrast"),
+            "apca-contrast should not emit hard violation for {label}"
+        );
+        assert_eq!(
+            report
+                .incomplete
+                .iter()
+                .filter(|v| v.rule_id == "apca-contrast")
+                .count(),
+            1,
+            "apca-contrast should route {label} to incomplete"
+        );
+    }
+
+    let focus_rule = clearway::BUILTIN_RULES
+        .iter()
+        .find(|r| r.id == "focus-outline-none")
+        .expect("focus-outline-none rule metadata should exist");
+    assert!(focus_rule.tags.contains(&"wcag2aa"));
+    assert!(!focus_rule.tags.contains(&"wcag2a"));
+}
+
+#[test]
+fn cyclic_ir_json_does_not_hang_or_stack_overflow() {
+    let cyclic_json = r##"{
+        "root": 0,
+        "nodes": [
+            {"id": 0, "parent": 0, "tag": "#document", "children": [0, 1]},
+            {"id": 1, "parent": 2, "tag": "body", "children": [2, 3, 4, 5, 6, 7, 8]},
+            {"id": 2, "parent": 1, "tag": "div", "attrs": {"aria-hidden": "true", "role": "text"}, "children": [1, 2], "computed": {"flex_direction": "row-reverse", "overflow_y": "auto", "scroll_height": 200.0, "client_height": 50.0}},
+            {"id": 3, "parent": 1, "tag": "figure", "attrs": {"role": "group"}, "children": [3, 4]},
+            {"id": 4, "parent": 3, "tag": "span", "attrs": {"lang": "fr", "aria-labelledby": "cyc"}, "children": [3, 4]},
+            {"id": 5, "parent": 1, "tag": "table", "children": [5, 6]},
+            {"id": 6, "parent": 5, "tag": "tbody", "children": [5, 6]},
+            {"id": 7, "parent": 1, "tag": "label", "attrs": {"id": "cyc"}, "children": [7, 8]},
+            {"id": 8, "parent": 7, "tag": "select", "children": [9]},
+            {"id": 9, "parent": 8, "tag": "optgroup", "children": [9]}
+        ]
+    }"##;
+
+    let doc: Document = serde_json::from_str(cyclic_json).expect("cyclic IR should deserialize");
+    let report = audit_document(
+        &doc,
+        &AuditOptions {
+            include_disabled: true,
+            ..AuditOptions::default()
+        },
+    );
+    assert!(report.summary.rules_run > 0);
+}

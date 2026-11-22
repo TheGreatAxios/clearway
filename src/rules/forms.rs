@@ -2,11 +2,11 @@
 //! `form-field-multiple-labels`, `label-content-name-mismatch`, `label-title-only`,
 //! and `accesskeys`.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use crate::accname::{accessible_name, collect_raw_text};
 use crate::aria::{effective_role, is_effectively_presentational, is_interactive_control};
-use crate::ir::{Document, Node, NodeId, normalize_whitespace};
+use crate::ir::{Document, MAX_TRAVERSAL_DEPTH, Node, NodeId, normalize_whitespace};
 use crate::rule::{AuditOptions, ConformanceProfile, Impact, Rule, RuleMeta, Violation};
 
 pub struct FormLabel;
@@ -794,11 +794,29 @@ fn is_block_tag(tag: &str) -> bool {
 }
 
 fn collect_visible_text(doc: &Document, id: NodeId, hints: &LabelStyleHints) -> String {
+    let mut visited = HashSet::new();
+    visited.insert(id);
+    collect_visible_text_inner(doc, id, hints, 0, &mut visited)
+}
+
+fn collect_visible_text_inner(
+    doc: &Document,
+    id: NodeId,
+    hints: &LabelStyleHints,
+    depth: usize,
+    visited: &mut HashSet<NodeId>,
+) -> String {
+    if depth >= MAX_TRAVERSAL_DEPTH {
+        return String::new();
+    }
     let Some(node) = doc.node(id) else {
         return String::new();
     };
     let mut out = String::new();
     for &cid in &node.children {
+        if !visited.insert(cid) {
+            continue;
+        }
         let Some(child) = doc.node(cid) else {
             continue;
         };
@@ -824,7 +842,7 @@ fn collect_visible_text(doc: &Document, id: NodeId, hints: &LabelStyleHints) -> 
         if block && !out.is_empty() && !out.ends_with(char::is_whitespace) {
             out.push(' ');
         }
-        let sub = collect_visible_text(doc, cid, hints);
+        let sub = collect_visible_text_inner(doc, cid, hints, depth + 1, visited);
         out.push_str(&sub);
         if block && !out.is_empty() && !out.ends_with(char::is_whitespace) {
             out.push(' ');

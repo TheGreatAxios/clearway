@@ -9,7 +9,7 @@
 //! are absent (e.g. raw static HTML), computed-style rules cleanly treat those
 //! nodes as inapplicable.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::accname::collect_raw_text;
 use crate::aria::{
@@ -94,8 +94,15 @@ pub(crate) fn is_node_or_ancestor_disabled(doc: &Document, id: NodeId) -> bool {
 }
 
 fn find_first_labelable_descendant(doc: &Document, id: NodeId) -> Option<NodeId> {
-    let node = doc.node(id)?;
-    for &cid in &node.children {
+    let mut visited = HashSet::new();
+    visited.insert(id);
+    let mut stack: Vec<NodeId> = doc
+        .node(id)
+        .map_or_default(|n| n.children.iter().rev().copied().collect());
+    while let Some(cid) = stack.pop() {
+        if !visited.insert(cid) {
+            continue;
+        }
         let Some(child) = doc.node(cid) else {
             continue;
         };
@@ -112,8 +119,8 @@ fn find_first_labelable_descendant(doc: &Document, id: NodeId) -> Option<NodeId>
         if is_labelable {
             return Some(cid);
         }
-        if let Some(found) = find_first_labelable_descendant(doc, cid) {
-            return Some(found);
+        for &gcid in child.children.iter().rev() {
+            stack.push(gcid);
         }
     }
     None
@@ -218,7 +225,7 @@ pub(crate) fn is_non_text_icon_glyph(doc: &Document, node: &Node) -> bool {
 /// Returns the nearest CSS gradient color stops behind `id` (with element
 /// opacity applied) if not covered by a nearer opaque solid `background-color`
 /// or non-gradient `background-image`.
-fn effective_gradient_stops(doc: &Document, id: NodeId) -> Option<Vec<Rgba>> {
+pub(crate) fn effective_gradient_stops(doc: &Document, id: NodeId) -> Option<Vec<Rgba>> {
     for nid in std::iter::once(id).chain(doc.ancestors(id)) {
         let Some(computed) = doc.node(nid).and_then(|n| n.computed.as_ref()) else {
             continue;
@@ -247,7 +254,7 @@ fn effective_gradient_stops(doc: &Document, id: NodeId) -> Option<Vec<Rgba>> {
 
 /// Returns `true` if `id` or an ancestor has a CSS `background-image` that is
 /// not completely covered by a nearer opaque solid `background-color` or opaque gradient.
-fn has_effective_background_image(doc: &Document, id: NodeId) -> bool {
+pub(crate) fn has_effective_background_image(doc: &Document, id: NodeId) -> bool {
     for nid in std::iter::once(id).chain(doc.ancestors(id)) {
         let Some(computed) = doc.node(nid).and_then(|n| n.computed.as_ref()) else {
             continue;
@@ -777,11 +784,11 @@ impl LinkInTextBlock {
 }
 
 fn block_has_non_link_text(doc: &Document, node_id: NodeId, excluded_id: NodeId) -> bool {
-    let Some(node) = doc.node(node_id) else {
-        return false;
-    };
-    for &cid in &node.children {
-        if cid == excluded_id {
+    let mut visited = HashSet::new();
+    visited.insert(node_id);
+    let mut stack: Vec<NodeId> = doc.node(node_id).map_or_default(|n| n.children.clone());
+    while let Some(cid) = stack.pop() {
+        if cid == excluded_id || !visited.insert(cid) {
             continue;
         }
         let Some(child) = doc.node(cid) else {
@@ -796,9 +803,7 @@ fn block_has_non_link_text(doc: &Document, node_id: NodeId, excluded_id: NodeId)
             if is_link {
                 continue;
             }
-            if block_has_non_link_text(doc, cid, excluded_id) {
-                return true;
-            }
+            stack.extend(&child.children);
         }
     }
     false
@@ -1170,19 +1175,23 @@ fn is_scroll_overflow(val: Option<&str>) -> bool {
 }
 
 fn has_focusable_descendant(doc: &Document, id: NodeId) -> bool {
-    let Some(node) = doc.node(id) else {
-        return false;
-    };
-    for &cid in &node.children {
+    let mut visited = HashSet::new();
+    visited.insert(id);
+    let mut stack: Vec<NodeId> = doc.node(id).map_or_default(|n| n.children.clone());
+    while let Some(cid) = stack.pop() {
+        if !visited.insert(cid) {
+            continue;
+        }
         let Some(child) = doc.node(cid) else {
             continue;
         };
         if !child.is_element() || !doc.is_in_accessibility_tree(cid) {
             continue;
         }
-        if is_sequentially_focusable(child) || has_focusable_descendant(doc, cid) {
+        if is_sequentially_focusable(child) {
             return true;
         }
+        stack.extend(&child.children);
     }
     false
 }
@@ -1214,10 +1223,13 @@ impl ScrollableRegionFocusable {
 }
 
 fn has_meaningful_scrollable_content(doc: &Document, id: NodeId) -> bool {
-    let Some(node) = doc.node(id) else {
-        return false;
-    };
-    for &cid in &node.children {
+    let mut visited = HashSet::new();
+    visited.insert(id);
+    let mut stack: Vec<NodeId> = doc.node(id).map_or_default(|n| n.children.clone());
+    while let Some(cid) = stack.pop() {
+        if !visited.insert(cid) {
+            continue;
+        }
         let Some(child) = doc.node(cid) else {
             continue;
         };
@@ -1241,9 +1253,7 @@ fn has_meaningful_scrollable_content(doc: &Document, id: NodeId) -> bool {
             ) {
                 return true;
             }
-            if has_meaningful_scrollable_content(doc, cid) {
-                return true;
-            }
+            stack.extend(&child.children);
         }
     }
     false

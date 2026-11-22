@@ -3,7 +3,7 @@
 //! `definition-list`, `dlitem`, `tabindex`, `nested-interactive`,
 //! `duplicate-id`, and `duplicate-id-active`.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 use crate::accname::accessible_name;
 use crate::aria::{
@@ -56,24 +56,27 @@ fn body_has_visible_content(doc: &Document) -> bool {
 }
 
 fn has_visible_descendant(doc: &Document, id: NodeId) -> bool {
-    let Some(node) = doc.node(id) else {
-        return false;
-    };
-    for &cid in &node.children {
+    let mut visited = HashSet::new();
+    visited.insert(id);
+    let mut stack: Vec<NodeId> = doc.node(id).map_or_default(|n| n.children.clone());
+    while let Some(cid) = stack.pop() {
+        if !visited.insert(cid) {
+            continue;
+        }
         let Some(child) = doc.node(cid) else {
             continue;
         };
         if child.is_text() && !child.text.trim().is_empty() {
             return true;
         }
-        if child.is_element()
-            && doc.is_in_accessibility_tree(cid)
-            && (matches!(
+        if child.is_element() && doc.is_in_accessibility_tree(cid) {
+            if matches!(
                 child.tag.as_str(),
                 "img" | "svg" | "input" | "iframe" | "video" | "canvas"
-            ) || has_visible_descendant(doc, cid))
-        {
-            return true;
+            ) {
+                return true;
+            }
+            stack.extend(&child.children);
         }
     }
     false
@@ -386,10 +389,13 @@ impl Rule for NestedInteractive {
 }
 
 fn has_interactive_descendant(doc: &Document, parent_id: NodeId) -> bool {
-    let Some(parent) = doc.node(parent_id) else {
-        return false;
-    };
-    for &cid in &parent.children {
+    let mut visited = HashSet::new();
+    visited.insert(parent_id);
+    let mut stack: Vec<NodeId> = doc.node(parent_id).map_or_default(|n| n.children.clone());
+    while let Some(cid) = stack.pop() {
+        if !visited.insert(cid) {
+            continue;
+        }
         let Some(child) = doc.node(cid) else {
             continue;
         };
@@ -399,9 +405,7 @@ fn has_interactive_descendant(doc: &Document, parent_id: NodeId) -> bool {
         if is_interactive_control(doc, child) {
             return true;
         }
-        if has_interactive_descendant(doc, cid) {
-            return true;
-        }
+        stack.extend(&child.children);
     }
     false
 }

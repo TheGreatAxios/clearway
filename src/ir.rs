@@ -11,6 +11,9 @@ use serde::{Deserialize, Serialize};
 /// Index into [`Document::nodes`].
 pub type NodeId = usize;
 
+/// Maximum DOM traversal depth for cycle/deep-nesting `DoS` protection on untrusted IR.
+pub(crate) const MAX_TRAVERSAL_DEPTH: usize = 512;
+
 /// An sRGB color with alpha channel in `[0.0, 1.0]`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Rgba {
@@ -367,10 +370,12 @@ impl Document {
     }
 
     /// Returns ancestor node IDs from immediate parent up to root.
-    pub fn ancestors(&self, mut id: NodeId) -> Vec<NodeId> {
+    pub fn ancestors(&self, start_id: NodeId) -> Vec<NodeId> {
         let mut out = Vec::new();
+        let mut id = start_id;
         while let Some(parent_id) = self.node(id).and_then(|n| n.parent) {
-            if out.contains(&parent_id) {
+            if parent_id == start_id || out.len() >= MAX_TRAVERSAL_DEPTH || out.contains(&parent_id)
+            {
                 break;
             }
             out.push(parent_id);
@@ -428,13 +433,14 @@ impl Document {
         }
 
         let mut parts = Vec::new();
+        let mut seen = Vec::new();
         let mut current = Some(id);
-        let mut depth = 0usize;
+        let max_depth = self.nodes.len().min(MAX_TRAVERSAL_DEPTH);
         while let Some(nid) = current {
-            if depth > self.nodes.len() {
+            if seen.len() >= max_depth || seen.contains(&nid) {
                 break;
             }
-            depth += 1;
+            seen.push(nid);
             let Some(node) = self.node(nid) else {
                 break;
             };

@@ -191,18 +191,42 @@ async function loadRunner(runnerPath) {
  * @return {!Promise<{server: !http.Server, baseUrl: string}>}
  */
 function startFixtureServer(allowedFiles) {
+  const fixturesRoot = fs.realpathSync(FIXTURES_DIR);
+  const fixturesPrefix = fixturesRoot.endsWith(path.sep) ?
+    fixturesRoot :
+    fixturesRoot + path.sep;
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
-      const rawPath = (req.url || '/').split('?')[0];
-      const name = path.basename(rawPath);
-      const filePath = path.join(FIXTURES_DIR, name);
-      if (!allowedFiles.has(name) || !fs.existsSync(filePath)) {
+      let decodedPath;
+      try {
+        decodedPath = decodeURIComponent((req.url || '/').split('?')[0]);
+      } catch {
+        res.writeHead(400, {'content-type': 'text/plain; charset=utf-8'});
+        res.end('Bad request');
+        return;
+      }
+      const relPath = decodedPath.replace(/^\/+/, '');
+      if (!relPath || relPath.includes('/') || relPath.includes('\\') ||
+          !allowedFiles.has(relPath)) {
+        res.writeHead(404, {'content-type': 'text/plain; charset=utf-8'});
+        res.end('Not found');
+        return;
+      }
+      const candidatePath = path.resolve(fixturesRoot, relPath);
+      if (!candidatePath.startsWith(fixturesPrefix) ||
+          !fs.existsSync(candidatePath)) {
+        res.writeHead(404, {'content-type': 'text/plain; charset=utf-8'});
+        res.end('Not found');
+        return;
+      }
+      const realPath = fs.realpathSync(candidatePath);
+      if (!realPath.startsWith(fixturesPrefix)) {
         res.writeHead(404, {'content-type': 'text/plain; charset=utf-8'});
         res.end('Not found');
         return;
       }
       res.writeHead(200, {'content-type': 'text/html; charset=utf-8'});
-      res.end(fs.readFileSync(filePath));
+      res.end(fs.readFileSync(realPath));
     });
     server.on('error', reject);
     server.listen(0, '127.0.0.1', () => {

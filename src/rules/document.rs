@@ -469,38 +469,43 @@ impl Rule for ValidLang {
 }
 
 fn owns_visible_text(doc: &Document, id: NodeId) -> bool {
-    let Some(node) = doc.node(id) else {
-        return false;
-    };
-    if node
-        .attr("aria-label")
-        .is_some_and(|v| !v.trim().is_empty())
-        || node.attr("title").is_some_and(|v| !v.trim().is_empty())
-        || (matches!(node.tag.as_str(), "img" | "area" | "input")
-            && node.attr("alt").is_some_and(|v| !v.trim().is_empty()))
-    {
-        return true;
-    }
-    for &cid in &node.children {
-        let Some(child) = doc.node(cid) else {
+    let mut visited = HashSet::new();
+    let mut stack = vec![id];
+    while let Some(nid) = stack.pop() {
+        if !visited.insert(nid) {
+            continue;
+        }
+        let Some(node) = doc.node(nid) else {
             continue;
         };
-        if child.is_text() && !child.text.trim().is_empty() {
+        if node
+            .attr("aria-label")
+            .is_some_and(|v| !v.trim().is_empty())
+            || node.attr("title").is_some_and(|v| !v.trim().is_empty())
+            || (matches!(node.tag.as_str(), "img" | "area" | "input")
+                && node.attr("alt").is_some_and(|v| !v.trim().is_empty()))
+        {
             return true;
         }
-        if !child.is_element() || !doc.is_rendered(cid) {
-            continue;
-        }
-        // A descendant with its own non-empty lang attribute overrides this element's lang.
-        let overrides_lang = child
-            .attr("lang")
-            .or_else(|| child.attr("xml:lang"))
-            .is_some_and(|v| !v.is_empty());
-        if overrides_lang {
-            continue;
-        }
-        if owns_visible_text(doc, cid) {
-            return true;
+        for &cid in &node.children {
+            let Some(child) = doc.node(cid) else {
+                continue;
+            };
+            if child.is_text() && !child.text.trim().is_empty() {
+                return true;
+            }
+            if !child.is_element() || !doc.is_rendered(cid) {
+                continue;
+            }
+            // A descendant with its own non-empty lang attribute overrides this element's lang.
+            let overrides_lang = child
+                .attr("lang")
+                .or_else(|| child.attr("xml:lang"))
+                .is_some_and(|v| !v.is_empty());
+            if overrides_lang {
+                continue;
+            }
+            stack.push(cid);
         }
     }
     false
@@ -719,24 +724,27 @@ fn is_repeated_block(doc: &Document, node: &Node) -> bool {
 }
 
 fn has_visible_body_content(doc: &Document, id: NodeId) -> bool {
-    let Some(node) = doc.node(id) else {
-        return false;
-    };
-    for &cid in &node.children {
+    let mut visited = HashSet::new();
+    visited.insert(id);
+    let mut stack: Vec<NodeId> = doc.node(id).map_or_default(|n| n.children.clone());
+    while let Some(cid) = stack.pop() {
+        if !visited.insert(cid) {
+            continue;
+        }
         let Some(child) = doc.node(cid) else {
             continue;
         };
         if child.is_text() && !child.text.trim().is_empty() {
             return true;
         }
-        if child.is_element()
-            && doc.is_in_accessibility_tree(cid)
-            && (matches!(
+        if child.is_element() && doc.is_in_accessibility_tree(cid) {
+            if matches!(
                 child.tag.as_str(),
                 "img" | "svg" | "input" | "iframe" | "video" | "canvas"
-            ) || has_visible_body_content(doc, cid))
-        {
-            return true;
+            ) {
+                return true;
+            }
+            stack.extend(&child.children);
         }
     }
     false

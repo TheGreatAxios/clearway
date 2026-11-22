@@ -68,15 +68,15 @@ fn parse_span(node: &Node, attr: &str, aria_attr: &str) -> usize {
 /// `[role="rowgroup"]` or transparent wrappers) without descending into nested tables.
 fn table_rows(doc: &Document, table_id: NodeId) -> Vec<NodeId> {
     let mut rows = Vec::new();
-    collect_table_rows(doc, table_id, &mut rows);
-    rows
-}
-
-fn collect_table_rows(doc: &Document, container_id: NodeId, rows: &mut Vec<NodeId>) {
-    let Some(container) = doc.node(container_id) else {
-        return;
-    };
-    for &cid in &container.children {
+    let mut visited = HashSet::new();
+    visited.insert(table_id);
+    let mut stack: Vec<NodeId> = doc
+        .node(table_id)
+        .map_or_default(|n| n.children.iter().rev().copied().collect());
+    while let Some(cid) = stack.pop() {
+        if !visited.insert(cid) {
+            continue;
+        }
         let Some(child) = doc.node(cid) else {
             continue;
         };
@@ -89,22 +89,25 @@ fn collect_table_rows(doc: &Document, container_id: NodeId, rows: &mut Vec<NodeI
         } else if matches!(role, Some("rowgroup" | "generic" | "none" | "presentation"))
             || matches!(child.tag.as_str(), "thead" | "tbody" | "tfoot")
         {
-            collect_table_rows(doc, cid, rows);
+            for &gcid in child.children.iter().rev() {
+                stack.push(gcid);
+            }
         }
     }
+    rows
 }
 
 fn row_cells(doc: &Document, row_id: NodeId) -> Vec<NodeId> {
     let mut cells = Vec::new();
-    collect_row_cells(doc, row_id, &mut cells);
-    cells
-}
-
-fn collect_row_cells(doc: &Document, container_id: NodeId, cells: &mut Vec<NodeId>) {
-    let Some(container) = doc.node(container_id) else {
-        return;
-    };
-    for &cid in &container.children {
+    let mut visited = HashSet::new();
+    visited.insert(row_id);
+    let mut stack: Vec<NodeId> = doc
+        .node(row_id)
+        .map_or_default(|n| n.children.iter().rev().copied().collect());
+    while let Some(cid) = stack.pop() {
+        if !visited.insert(cid) {
+            continue;
+        }
         let Some(child) = doc.node(cid) else {
             continue;
         };
@@ -118,9 +121,12 @@ fn collect_row_cells(doc: &Document, container_id: NodeId, cells: &mut Vec<NodeI
             None | Some("generic" | "none" | "presentation")
         ) && !matches!(child.tag.as_str(), "table" | "tr")
         {
-            collect_row_cells(doc, cid, cells);
+            for &gcid in child.children.iter().rev() {
+                stack.push(gcid);
+            }
         }
     }
+    cells
 }
 
 struct PlacedCell {
