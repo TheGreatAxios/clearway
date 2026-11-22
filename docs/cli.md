@@ -74,8 +74,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      # Install from the checked-out repository (or `cargo install clearway` once published to crates.io)
-      - run: cargo install --path .
+      - run: cargo install clearway
       - name: Run Clearway audit
         run: clearway dist/index.html --sarif > clearway.sarif
         continue-on-error: true

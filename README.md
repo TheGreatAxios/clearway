@@ -1,5 +1,7 @@
 # clearway
 
+[![Crates.io](https://img.shields.io/crates/v/clearway.svg)](https://crates.io/crates/clearway)
+[![docs.rs](https://img.shields.io/docsrs/clearway)](https://docs.rs/clearway)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 Fast, browser-agnostic WCAG 2.1/2.2 accessibility checker for HTML, live browsers, CI, and WebAssembly.
@@ -13,10 +15,10 @@ Fast, browser-agnostic WCAG 2.1/2.2 accessibility checker for HTML, live browser
 
 ## Quickstart
 
-Install from a local checkout (or run directly with `cargo run -- <file>`). `cargo install clearway` will be available once published to `crates.io`.
+Install from `crates.io` (or from a local checkout with `cargo install --path .`):
 
 ```sh
-cargo install --path .
+cargo install clearway
 
 clearway index.html
 curl -s https://example.com | clearway -
@@ -76,6 +78,7 @@ Generate local API documentation with `cargo doc --no-deps --open`.
 
 ## Documentation
 
+- [API Documentation (docs.rs)](https://docs.rs/clearway) — Rust crate reference
 - [CLI Reference & CI Integration](docs/cli.md) — flags, exit codes, JSON/SARIF output, and GitHub Code Scanning
 - [Live Browsers & WebAssembly](docs/browser-and-wasm.md) — Playwright/Puppeteer/CDP snapshots and `clearway-wasm`
 - [Rust Examples](examples/) — `basic.rs`, `browser_ir.rs`, and `batch_scan.rs`
