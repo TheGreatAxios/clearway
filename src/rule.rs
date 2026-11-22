@@ -89,16 +89,16 @@ impl Violation {
     }
 }
 
-/// Conformance profile controlling interpretation where practical WCAG
-/// heuristics and strict W3C ACT / `AccName` 1.2 rules intentionally diverge
-/// (for example, `placeholder` as a fallback accessible name per W3C `AccName` 1.2).
+/// Conformance profile controlling how the `label` rule handles
+/// `placeholder`-only form inputs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ConformanceProfile {
-    /// Default WCAG / WAI-ARIA conformance profile.
+    /// Default profile: flags `placeholder`-only form inputs under the `label` rule.
     #[default]
     Standard,
-    /// Strict W3C ACT Rules / `AccName` 1.2 specification semantics.
+    /// Accepts `placeholder` as a fallback accessible name on the `label` rule
+    /// per W3C `AccName`.
     #[serde(alias = "act")]
     W3cAct,
 }
@@ -115,7 +115,8 @@ pub struct AuditOptions {
     /// When `true`, also run rules with `enabled_by_default == false`.
     #[serde(default)]
     pub include_disabled: bool,
-    /// Conformance profile (`Standard` by default, or `W3cAct`).
+    /// Conformance profile (`Standard` by default; `W3cAct` accepts `placeholder`
+    /// as a fallback accessible name on the `label` rule).
     #[serde(default)]
     pub profile: ConformanceProfile,
 }

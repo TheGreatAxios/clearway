@@ -16,7 +16,7 @@ Pass a local file path or `-` to read HTML5 (or Document IR JSON when `--ir` is 
 | `--sarif` | Emit SARIF 2.1.0 JSON for GitHub Code Scanning and PR annotations. |
 | `--ir` | Parse input as a serialized browser Document IR JSON snapshot instead of raw HTML5. |
 | `--tags <list>` | Comma-separated list of tags to run (e.g. `wcag2a,wcag2aa`, `wcag21aa`, `wcag22aa`, `ACT`, `best-practice`, `clearway`). |
-| `--profile <standard\|act>` | Conformance profile: `standard` (default) or `act` (strict W3C ACT / AccName 1.2 behavior; also accepts `w3c-act`). |
+| `--profile <standard\|act>` | Conformance profile: `standard` (default) flags `placeholder`-only form inputs under `label`; `act` (also accepts `w3c-act`) accepts `placeholder` as a fallback accessible name on `label` per W3C AccName. |
 | `--all-rules` | Include rules disabled by default (`wcag2aaa`, experimental, obsolete, and opt-in extended rules). |
 | `--rules` | List all 113 built-in rules with WCAG references, impact levels, default states, and tags, then exit. |
 | `--bench <n>` | Run `<n>` audit iterations (after 1 warmup run) and print `us/audit` and `audits/sec`. |
@@ -37,7 +37,7 @@ clearway snapshot.json --ir --json
 # Run only WCAG 2.0/2.1 Level A and AA checks
 clearway dist/index.html --tags wcag2a,wcag2aa
 
-# Strict W3C ACT profile
+# Accept placeholder as a fallback accessible name on `label` (W3C AccName)
 clearway dist/index.html --profile act
 
 # Include opt-in and AAA rules
@@ -74,6 +74,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      # Once published to crates.io (or use `cargo install --path .` from a local checkout)
       - run: cargo install clearway
       - name: Run Clearway audit
         run: clearway dist/index.html --sarif > clearway.sarif

@@ -127,7 +127,7 @@ fn print_usage() {
     );
     println!("  --all-rules           Include rules that are disabled by default");
     println!(
-        "  --profile <standard|act>  Conformance profile: 'standard' (default) or 'act' (W3C ACT)"
+        "  --profile <standard|act>  Profile: 'standard' (default, flags placeholder-only inputs) or 'act' (allows placeholder fallback on label)"
     );
     println!("  --bench <n>           Run <n> audit iterations and report timing (us/audit)");
 }

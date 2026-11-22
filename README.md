@@ -1,8 +1,5 @@
 # clearway
 
-[![CI](https://github.com/TheGreatAxios/clearway/actions/workflows/ci.yml/badge.svg)](https://github.com/TheGreatAxios/clearway/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/clearway.svg)](https://crates.io/crates/clearway)
-[![docs.rs](https://docs.rs/clearway/badge.svg)](https://docs.rs/clearway)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 Fast, browser-agnostic WCAG 2.1/2.2 accessibility checker for HTML, live browsers, CI, and WebAssembly.
@@ -11,19 +8,21 @@ Fast, browser-agnostic WCAG 2.1/2.2 accessibility checker for HTML, live browser
 
 - **113 built-in rules** covering WCAG 2.0/2.1/2.2, WAI-ARIA 1.2/1.3, and HTML-AAM
 - **Runs anywhere**: static HTML CLI, live Chrome/Playwright/CDP snapshots, Rust library, or WebAssembly
-- **Honest `violations` vs. `incomplete` split**: deterministic failures fail CI; ambiguous cases like text over photos or text shadows go to review with zero false alarms
+- **Honest `violations` vs. `incomplete` split**: deterministic failures fail CI; ambiguous cases like text over photos or text shadows go to review
 - **CI-ready output**: machine-readable `--json` and `--sarif` (GitHub Code Scanning) out of the box
 
 ## Quickstart
 
+Install from a local checkout (or run directly with `cargo run -- <file>`). `cargo install clearway` will be available once published to `crates.io`.
+
 ```sh
-cargo install clearway
+cargo install --path .
 
 clearway index.html
 curl -s https://example.com | clearway -
 clearway index.html --json
 clearway index.html --sarif > clearway.sarif
-clearway index.html --tags wcag2a,wcag2aa --profile act
+clearway index.html --tags wcag2a,wcag2aa
 ```
 
 Sample output:
@@ -46,21 +45,34 @@ let report = audit_html(html, &AuditOptions::default());
 assert_eq!(report.summary.violations, 0);
 ```
 
-## Clearway Benchmark
+## Benchmark
 
-Median runtime and finding counts (`v` violations, `i` incomplete) in Headless Chrome across 5 self-contained fixtures (see [`benchmarks/README.md`](benchmarks/README.md) for methodology and custom runners):
+Measured locally in static HTML5 mode (1 warmup + 3 timed runs, median reported) across the 5 self-contained fixtures in `benchmarks/fixtures/`:
 
-| Fixture | Elements | clearway (e2e / engine / v) | axe-core (ms / v) | IBM Equal Access (ms / v) | HTML_CodeSniffer (ms / v) | Siteimprove Alfa (ms / v) |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| small-landing.html | 124 | 10.5 ms (3.8 ms engine) / 0v | 43.6 ms / 0v | 32.1 ms / 3v / 20i | 5.2 ms / 1v / 3i | 85.5 ms / 8v |
-| medium-violations.html | 53 | 8.4 ms (3.5 ms engine) / 17v | 513.7 ms / 14v / 2i | 22.3 ms / 12v / 10i | 4.7 ms / 11v / 3i | 41.2 ms / 20v / 1i |
-| large-table.html | 2857 | 97.2 ms (19.5 ms engine) / 0v | 298.5 ms / 0v | 285.2 ms / 0v / 2i | 47.0 ms / 280v | 2960.3 ms / 7v |
-| modern-shadow-dom.html | 44 | 8.2 ms (3.9 ms engine) / 5v | 32.1 ms / 2v / 2i | 17.6 ms / 2v / 5i | 4.8 ms / 2v / 2i | 29.0 ms / 4v / 1i |
-| contrast-and-layout.html | 51 | 8.2 ms (3.7 ms engine) / 7v / 1i | 33.9 ms / 3v / 6i | 20.2 ms / 3v / 14i | 5.0 ms / 3v / 2i | 40.4 ms / 15v / 4i |
-| **Median** | - | **8.4 ms** (3.8 ms engine) | **43.6 ms** | **22.3 ms** | **5.0 ms** | **41.2 ms** |
+```sh
+cargo build --release && node benchmarks/run.mjs --runner benchmarks/runners/clearway.mjs
+```
 
-- **W3C WCAG ACT static suite (631 cases)**: 98.1% accuracy, 97.6% precision, 96.7% recall, 97.2% F1
-- **Headless Chrome ACT (99 cases, 5 objective browser rules)**: 97.0% accuracy, 100.0% precision, 90.3% recall, 94.9% F1
+| Fixture | Elements | Expected bounds | Violations | Median latency |
+| --- | ---: | ---: | ---: | ---: |
+| `small-landing.html` | 123 | 0 | 0 | 3.5 ms |
+| `medium-violations.html` | 52 | 12–30 | 15 | 4.1 ms |
+| `large-table.html` | 2856 | 0 | 0 | 9.8 ms |
+| `modern-shadow-dom.html` | 31 | 3–15 | 3 | 2.1 ms |
+| `contrast-and-layout.html` | 50 | 4–12 (browser) | 0 | 2.1 ms |
+| **Median** | - | - | - | **3.5 ms** |
+
+`contrast-and-layout.html` requires a live browser (`puppeteer-core` + Chrome/Chromium) to evaluate computed layout and contrast bounds. Any other accessibility engine can be plugged into the same harness using the runner contract in [`benchmarks/README.md`](benchmarks/README.md).
+
+## Testing & Verification
+
+Run the unit, integration, and ACT-inspired conformance test suites in `tests/`:
+
+```sh
+cargo test
+```
+
+Generate local API documentation with `cargo doc --no-deps --open`.
 
 ## Documentation
 
@@ -68,8 +80,7 @@ Median runtime and finding counts (`v` violations, `i` incomplete) in Headless C
 - [Live Browsers & WebAssembly](docs/browser-and-wasm.md) — Playwright/Puppeteer/CDP snapshots and `clearway-wasm`
 - [Rust Examples](examples/) — `basic.rs`, `browser_ir.rs`, and `batch_scan.rs`
 - [Benchmarks](benchmarks/README.md) — fixtures, runner protocol, and reproduction steps
-- [API Reference (docs.rs)](https://docs.rs/clearway)
 
 ## License
 
-Dual-licensed under MIT (LICENSE-MIT) or Apache-2.0 (LICENSE-APACHE), at your option.
+Dual-licensed under MIT (`LICENSE-MIT`) or Apache-2.0 (`LICENSE-APACHE`), at your option.
