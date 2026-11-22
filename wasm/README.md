@@ -20,7 +20,10 @@ wasm-pack build --target web
 ## Usage
 
 ```js
-import { audit_html, audit_document, builtin_rules } from "./pkg/clearway_wasm.js";
+import init, { audit_html, audit_document, builtin_rules } from "./pkg/clearway_wasm.js";
+
+// Required for `--target web` (omit for `--target bundler` or `--target nodejs`)
+await init();
 
 const report = JSON.parse(audit_html('<html lang="en"><head><title>Hi</title></head><body><main><h1>Hi</h1></main></body></html>'));
 console.log(report.summary);

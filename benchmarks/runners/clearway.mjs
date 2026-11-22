@@ -24,15 +24,16 @@ const COLLECTOR_SOURCE = fs.readFileSync(COLLECTOR_PATH, 'utf8');
  * @return {string}
  */
 function findClearwayBinary() {
-  const releaseBin = path.join(REPO_ROOT, 'target', 'release', 'clearway');
+  const binName = process.platform === 'win32' ? 'clearway.exe' : 'clearway';
+  const releaseBin = path.join(REPO_ROOT, 'target', 'release', binName);
   if (fs.existsSync(releaseBin)) {
     return releaseBin;
   }
-  const debugBin = path.join(REPO_ROOT, 'target', 'debug', 'clearway');
+  const debugBin = path.join(REPO_ROOT, 'target', 'debug', binName);
   if (fs.existsSync(debugBin)) {
     return debugBin;
   }
-  return 'clearway';
+  return binName;
 }
 
 const CLEARWAY_BIN = findClearwayBinary();
@@ -54,7 +55,8 @@ function runClearwayJson(args, stdinText) {
     const stdout = execFileSync(CLEARWAY_BIN, args, options);
     return JSON.parse(stdout);
   } catch (err) {
-    if (err && typeof err.stdout === 'string' && err.stdout.trim()) {
+    if (err && err.status === 1 && typeof err.stdout === 'string' &&
+        err.stdout.trim()) {
       return JSON.parse(err.stdout);
     }
     throw err;

@@ -26,6 +26,15 @@ pub struct Rgba {
 impl Rgba {
     /// Creates an RGBA color with alpha clamped to `[0.0, 1.0]`.
     pub const fn new(r: u8, g: u8, b: u8, a: f32) -> Self {
+        let a = if a <= 0.0 {
+            0.0
+        } else if a >= 1.0 {
+            1.0
+        } else if a > 0.0 {
+            a
+        } else {
+            0.0
+        };
         Self { r, g, b, a }
     }
 
@@ -585,7 +594,15 @@ pub fn normalize_whitespace(input: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{Document, normalize_whitespace};
+    use super::{Document, Rgba, normalize_whitespace};
+
+    #[test]
+    fn rgba_new_clamps_alpha() {
+        assert_eq!(Rgba::new(10, 20, 30, -0.5).a, 0.0);
+        assert_eq!(Rgba::new(10, 20, 30, 0.25).a, 0.25);
+        assert_eq!(Rgba::new(10, 20, 30, 1.5).a, 1.0);
+        assert_eq!(Rgba::new(10, 20, 30, f32::NAN).a, 0.0);
+    }
 
     #[test]
     fn normalizes_ascii_and_unicode_whitespace() {

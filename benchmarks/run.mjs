@@ -428,10 +428,13 @@ async function main() {
       ...runners.map((r) => {
         const medMs = median(rows.map((row) => row.results[r.name].ms));
         if (runnerHasDistinctEngine[r.name]) {
-          const medEng = median(
-              rows.map((row) => row.results[r.name].engineMs),
-          );
-          return `**${fmtMs(medMs)}** (${fmtMs(medEng)} engine)`;
+          const engineValues = rows
+              .map((row) => row.results[r.name].engineMs)
+              .filter((v) => typeof v === 'number');
+          if (engineValues.length > 0) {
+            const medEng = median(engineValues);
+            return `**${fmtMs(medMs)}** (${fmtMs(medEng)} engine)`;
+          }
         }
         return `**${fmtMs(medMs)}**`;
       }),

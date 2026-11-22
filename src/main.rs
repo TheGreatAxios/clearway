@@ -92,7 +92,7 @@ fn parse_args() -> Result<CliArgs, String> {
                 parsed.bench = Some(n);
             }
             "-h" | "--help" => {
-                print_usage();
+                println!("{USAGE}");
                 std::process::exit(0);
             }
             other if other.starts_with('-') && other != "-" => {
@@ -110,27 +110,19 @@ fn parse_args() -> Result<CliArgs, String> {
     Ok(parsed)
 }
 
-fn print_usage() {
-    println!(
-        "Usage: clearway <html-or-ir-json|-> [--ir] [--json] [--sarif] [--rules] [--tags <list>] [--all-rules] [--profile <standard|act>] [--bench <n>]"
-    );
-    println!();
-    println!("Options:");
-    println!("  --ir                  Parse input as serialized Document IR JSON instead of HTML");
-    println!("  --json                Emit machine-readable JSON output");
-    println!(
-        "  --sarif               Emit SARIF 2.1.0 JSON for GitHub Code Scanning / PR annotations"
-    );
-    println!("  --rules               List all built-in accessibility rules and exit");
-    println!(
-        "  --tags <comma-list>   Run only rules matching at least one tag (e.g. wcag2a,wcag2aa)"
-    );
-    println!("  --all-rules           Include rules that are disabled by default");
-    println!(
-        "  --profile <standard|act>  Profile: 'standard' (default, flags placeholder-only inputs) or 'act' (allows placeholder fallback on label)"
-    );
-    println!("  --bench <n>           Run <n> audit iterations and report timing (us/audit)");
-}
+const USAGE: &str = "\
+Usage: clearway <html-or-ir-json|-> [--ir] [--json] [--sarif] [--rules] [--tags <list>] [--all-rules] [--profile <standard|act>] [--bench <n>] [-h|--help]
+
+Options:
+  --ir                  Parse input as serialized Document IR JSON instead of HTML
+  --json                Emit machine-readable JSON output
+  --sarif               Emit SARIF 2.1.0 JSON for GitHub Code Scanning / PR annotations
+  --rules               List all built-in accessibility rules and exit
+  --tags <comma-list>   Run only rules matching at least one tag (e.g. wcag2a,wcag2aa)
+  --all-rules           Include rules that are disabled by default
+  --profile <standard|act>  Profile: 'standard' (default, flags placeholder-only inputs) or 'act' (allows placeholder fallback on label)
+  --bench <n>           Run <n> audit iterations and report timing (us/audit)
+  -h, --help            Print usage information and exit";
 
 fn read_input(path: &str) -> Result<String, String> {
     if path == "-" {
@@ -162,10 +154,14 @@ fn run_bench(raw: &str, is_ir: bool, iterations: usize, options: &AuditOptions) 
         }
         let elapsed = start.elapsed();
         let us_per_audit = elapsed.as_secs_f64() * 1_000_000.0 / (iterations as f64);
-        println!(
-            "bench (IR): {iterations} audits in {:.2} ms ({us_per_audit:.2} us/audit, {:.0} audits/sec)",
-            elapsed.as_secs_f64() * 1000.0,
+        let audits_per_sec = if us_per_audit > 0.0 {
             1_000_000.0 / us_per_audit
+        } else {
+            0.0
+        };
+        println!(
+            "bench (IR): {iterations} audits in {:.2} ms ({us_per_audit:.2} us/audit, {audits_per_sec:.0} audits/sec)",
+            elapsed.as_secs_f64() * 1000.0,
         );
     } else {
         let _ = black_box(audit_html(black_box(raw), options));
@@ -176,10 +172,14 @@ fn run_bench(raw: &str, is_ir: bool, iterations: usize, options: &AuditOptions) 
         }
         let elapsed = start.elapsed();
         let us_per_audit = elapsed.as_secs_f64() * 1_000_000.0 / (iterations as f64);
-        println!(
-            "bench (HTML5 parse + audit): {iterations} audits in {:.2} ms ({us_per_audit:.2} us/audit, {:.0} audits/sec)",
-            elapsed.as_secs_f64() * 1000.0,
+        let audits_per_sec = if us_per_audit > 0.0 {
             1_000_000.0 / us_per_audit
+        } else {
+            0.0
+        };
+        println!(
+            "bench (HTML5 parse + audit): {iterations} audits in {:.2} ms ({us_per_audit:.2} us/audit, {audits_per_sec:.0} audits/sec)",
+            elapsed.as_secs_f64() * 1000.0,
         );
     }
     ExitCode::SUCCESS
@@ -218,7 +218,7 @@ fn main() -> ExitCode {
         Ok(a) => a,
         Err(msg) => {
             eprintln!("error: {msg}");
-            print_usage();
+            eprintln!("{USAGE}");
             return ExitCode::from(2);
         }
     };
@@ -251,7 +251,7 @@ fn main() -> ExitCode {
 
     let Some(input_path) = args.input else {
         eprintln!("error: missing input path (use '-' for stdin or --rules)");
-        print_usage();
+        eprintln!("{USAGE}");
         return ExitCode::from(2);
     };
 

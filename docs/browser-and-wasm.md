@@ -65,7 +65,10 @@ wasm-pack build --target web
 ### Usage
 
 ```js
-import { audit_html, audit_document, builtin_rules } from "./wasm/pkg/clearway_wasm.js";
+import init, { audit_html, audit_document, builtin_rules } from "./wasm/pkg/clearway_wasm.js";
+
+// Required for `--target web` (omit for `--target bundler` or `--target nodejs`)
+await init();
 
 // Static HTML5
 const report = JSON.parse(

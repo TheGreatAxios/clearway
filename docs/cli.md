@@ -35,7 +35,7 @@ curl -s https://example.com | clearway - --json
 clearway snapshot.json --ir --json
 
 # Run only WCAG 2.0/2.1 Level A and AA checks
-clearway dist/index.html --tags wcag2a,wcag2aa
+clearway dist/index.html --tags wcag2a,wcag2aa,wcag21a,wcag21aa
 
 # Accept placeholder as a fallback accessible name on `label` (W3C AccName)
 clearway dist/index.html --profile act
@@ -74,8 +74,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      # Once published to crates.io (or use `cargo install --path .` from a local checkout)
-      - run: cargo install clearway
+      # Install from the checked-out repository (or `cargo install clearway` once published to crates.io)
+      - run: cargo install --path .
       - name: Run Clearway audit
         run: clearway dist/index.html --sarif > clearway.sarif
         continue-on-error: true
