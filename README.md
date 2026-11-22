@@ -5,16 +5,25 @@
 [![docs.rs](https://docs.rs/clearway/badge.svg)](https://docs.rs/clearway)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
-`clearway` is a browser-agnostic, pure-Rust accessibility engine for HTML5 documents and live browser DOM snapshots, built directly on W3C WCAG 2.0/2.1/2.2, WAI-ARIA 1.2/1.3, HTML-AAM, AccName 1.2, and W3C ACT Rules. It ships with 113 built-in rules: 105 core WCAG, WAI-ARIA, and best-practice rules plus 8 extended modern-web rules.
+Fast, browser-agnostic WCAG 2.1/2.2 accessibility checker for HTML, live browsers, CI, and WebAssembly.
 
-The library core is synchronous, has 4 pure-Rust runtime dependencies (`ego-tree`, `scraper`, `serde`, `serde_json`), forbids `unsafe` code, and compiles to native targets and `wasm32-unknown-unknown`. Deterministic failures report as `violations`, while ambiguous cases such as text over background images or non-provable gradients report as `incomplete` for human review.
+## Why Clearway
+
+- **113 built-in rules** covering WCAG 2.0/2.1/2.2, WAI-ARIA 1.2/1.3, and HTML-AAM
+- **Runs anywhere**: static HTML CLI, live Chrome/Playwright/CDP snapshots, Rust library, or WebAssembly
+- **Honest `violations` vs. `incomplete` split**: deterministic failures fail CI; ambiguous cases like text over photos or text shadows go to review with zero false alarms
+- **CI-ready output**: machine-readable `--json` and `--sarif` (GitHub Code Scanning) out of the box
 
 ## Quickstart
 
 ```sh
 cargo install clearway
+
 clearway index.html
 curl -s https://example.com | clearway -
+clearway index.html --json
+clearway index.html --sarif > clearway.sarif
+clearway index.html --tags wcag2a,wcag2aa --profile act
 ```
 
 Sample output:
@@ -27,11 +36,19 @@ clearway: 1 violation(s), 0 warning(s), 0 incomplete across 95 rules (7 elements
           snippet:  <img src="hero.png">
 ```
 
+Rust library:
+
+```rust
+use clearway::{AuditOptions, audit_html};
+
+let html = r#"<!doctype html><html lang="en"><head><title>Home</title></head><body><main><h1>Hello</h1></main></body></html>"#;
+let report = audit_html(html, &AuditOptions::default());
+assert_eq!(report.summary.violations, 0);
+```
+
 ## Clearway Benchmark
 
-The repository includes a pluggable benchmark harness in [`benchmarks/run.mjs`](benchmarks/run.mjs) backed by a ground-truth fixture manifest in [`benchmarks/cases.json`](benchmarks/cases.json). Only `clearway`'s own runner ships in the repo; external engines plug in via `--runner <path>` (see [`benchmarks/README.md`](benchmarks/README.md)).
-
-Median runtime and finding counts (`v` violations, `i` incomplete) in Headless Chrome across 5 self-contained fixtures (1 warmup + 3 timed runs per fixture):
+Median runtime and finding counts (`v` violations, `i` incomplete) in Headless Chrome across 5 self-contained fixtures (see [`benchmarks/README.md`](benchmarks/README.md) for methodology and custom runners):
 
 | Fixture | Elements | clearway (e2e / engine / v) | axe-core (ms / v) | IBM Equal Access (ms / v) | HTML_CodeSniffer (ms / v) | Siteimprove Alfa (ms / v) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -42,62 +59,16 @@ Median runtime and finding counts (`v` violations, `i` incomplete) in Headless C
 | contrast-and-layout.html | 51 | 8.2 ms (3.7 ms engine) / 7v / 1i | 33.9 ms / 3v / 6i | 20.2 ms / 3v / 14i | 5.0 ms / 3v / 2i | 40.4 ms / 15v / 4i |
 | **Median** | - | **8.4 ms** (3.8 ms engine) | **43.6 ms** | **22.3 ms** | **5.0 ms** | **41.2 ms** |
 
-W3C WCAG ACT conformance:
-
 - **W3C WCAG ACT static suite (631 cases)**: 98.1% accuracy, 97.6% precision, 96.7% recall, 97.2% F1
 - **Headless Chrome ACT (99 cases, 5 objective browser rules)**: 97.0% accuracy, 100.0% precision, 90.3% recall, 94.9% F1
 
-## CLI options
+## Documentation
 
-```sh
-# Emit structured JSON (accepts stdin with "-")
-cat index.html | clearway - --json
-
-# Emit SARIF 2.1.0 for GitHub Code Scanning
-clearway index.html --sarif > clearway.sarif
-
-# Audit a live browser Document IR snapshot
-clearway snapshot.json --ir --json
-
-# Filter by WCAG, ACT, best-practice, or clearway tags
-clearway index.html --tags wcag2a,wcag2aa
-clearway index.html --tags clearway
-
-# Switch conformance profile (standard default, or strict W3C ACT / AccName 1.2)
-clearway index.html --profile standard
-clearway index.html --profile act
-
-# Enable rules that are off by default (wcag2aaa, experimental, obsolete, opt-in extensions)
-clearway index.html --all-rules
-
-# List all 113 built-in rules
-clearway --rules
-
-# Benchmark HTML5 parsing and the full rule suite
-clearway index.html --bench 1000
-```
-
-## Rust library and examples
-
-```rust
-use clearway::{AuditOptions, audit_html};
-
-let html = r#"<!doctype html><html lang="en"><head><title>Home</title></head><body><main><h1>Hello</h1></main></body></html>"#;
-let report = audit_html(html, &AuditOptions::default());
-assert_eq!(report.summary.violations, 0);
-```
-
-Runnable examples live in [`examples/`](examples/):
-
-- [`examples/basic.rs`](examples/basic.rs): audit an HTML string and inspect violations (`cargo run --example basic`)
-- [`examples/browser_ir.rs`](examples/browser_ir.rs): audit a serialized browser Document IR (`cargo run --example browser_ir`)
-- [`examples/batch_scan.rs`](examples/batch_scan.rs): scan multiple HTML files in one pass (`cargo run --example batch_scan`)
-
-## Browser snapshots, WebAssembly, and coding agents
-
-- [`collectors/browser-snapshot.js`](collectors/browser-snapshot.js) runs in Playwright, Puppeteer, or CDP `Runtime.evaluate` to serialize computed styles, bounding rects, open Shadow DOM trees, same-origin iframes, `z-index` contrast layers, and CSS gradients into the JSON IR consumed by `--ir` or `audit_document`.
-- [`wasm/`](wasm/) builds the `wasm-bindgen` package (`clearway-wasm`) for browsers, extensions, Cloudflare Workers, Node, Bun, and Deno.
-- Coding-agent loops and CI pipelines can run `clearway --json` for deterministic rule IDs, selectors, and snippets, or `clearway --sarif` to upload findings directly to GitHub Code Scanning.
+- [CLI Reference & CI Integration](docs/cli.md) — flags, exit codes, JSON/SARIF output, and GitHub Code Scanning
+- [Live Browsers & WebAssembly](docs/browser-and-wasm.md) — Playwright/Puppeteer/CDP snapshots and `clearway-wasm`
+- [Rust Examples](examples/) — `basic.rs`, `browser_ir.rs`, and `batch_scan.rs`
+- [Benchmarks](benchmarks/README.md) — fixtures, runner protocol, and reproduction steps
+- [API Reference (docs.rs)](https://docs.rs/clearway)
 
 ## License
 

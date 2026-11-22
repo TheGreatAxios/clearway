@@ -9,7 +9,7 @@ documentation = "https://docs.rs/clearway"
 readme = "README.md"
 keywords = ["accessibility", "wcag", "a11y", "aria", "html"]
 categories = ["accessibility", "web-programming", "command-line-utilities"]
-exclude = [".github/", "wasm/", "benchmarks/"]
+exclude = [".github/", "wasm/", "benchmarks/", "docs/"]
 
 [dependencies]
 ego-tree = "0.10"

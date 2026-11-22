@@ -1,7 +1,28 @@
-//! Pure-Rust, browser-agnostic accessibility engine for HTML5 and DOM IR snapshots.
+//! Fast, browser-agnostic WCAG 2.1/2.2 accessibility engine for HTML5 documents
+//! and live browser DOM IR snapshots.
 //!
-//! The library core is 100% synchronous with zero filesystem, process, or network
-//! I/O so it compiles cleanly for native Rust, WASM, `napi-rs`, `PyO3`, and Ruby FFI.
+//! `clearway` ships with 113 built-in rules covering WCAG 2.0/2.1/2.2,
+//! WAI-ARIA 1.2/1.3, HTML-AAM, `AccName` 1.2, and W3C ACT Rules. The library core
+//! is synchronous with zero filesystem, process, or network I/O, so it works
+//! across native Rust, WebAssembly, and FFI targets.
+//!
+//! # Quickstart
+//!
+//! ```
+//! use clearway::{AuditOptions, audit_html};
+//!
+//! let html = r#"<!doctype html><html lang="en"><head><title>Home</title></head><body><main><h1>Hello</h1></main></body></html>"#;
+//! let report = audit_html(html, &AuditOptions::default());
+//! assert_eq!(report.summary.violations, 0);
+//! ```
+//!
+//! # Entry points
+//!
+//! - [`audit_html`]: parse an HTML5 string and run all enabled rules.
+//! - [`audit_document`]: audit a pre-built [`Document`] IR (e.g., from a live
+//!   browser snapshot).
+//! - [`to_sarif_json`]: serialize an [`AuditReport`] to SARIF 2.1.0 for GitHub
+//!   Code Scanning.
 
 pub mod accname;
 pub mod aria;
