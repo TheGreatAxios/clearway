@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modern Web Patterns &amp; Shadow DOM Fixture</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #ffffff;
+      color: #14181f;
+      line-height: 1.5;
+    }
+    main {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    /* z-index: -1 dark backdrop behind white text (valid high contrast when composited) */
+    .hero-banner {
+      position: relative;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      color: #ffffff;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+    .hero-backdrop {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: #0f172a;
+    }
+    /* CSS linear-gradient background under text */
+    .gradient-callout {
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1d4ed8 0%, #9333ea 100%);
+      color: #ffffff;
+    }
+    /* Focus indicator suppression */
+    .no-focus-ring:focus {
+      outline: none;
+    }
+    button, input {
+      font-size: 1rem;
+      padding: 0.5rem 0.75rem;
+    }
+    section {
+      margin-bottom: 1.75rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero-banner" aria-labelledby="banner-title">
+      <div class="hero-backdrop" aria-hidden="true"></div>
+      <h1 id="banner-title">Modern Web Accessibility Patterns</h1>
+      <p>
+        White text positioned over a negative z-index dark backdrop should resolve
+        against the composited dark layer rather than the white page canvas.
+      </p>
+    </section>
+
+    <section class="gradient-callout" aria-labelledby="gradient-title">
+      <h2 id="gradient-title">Gradient surface notice</h2>
+      <p>Text rendered over a multi-stop CSS linear gradient.</p>
+    </section>
+
+    <section aria-labelledby="shadow-title">
+      <h2 id="shadow-title">Nested Open Shadow DOM Web Components</h2>
+      <x-card>
+        <span slot="heading">Cluster Health Summary</span>
+        <p>Slotted light-DOM description rendered inside an open shadow root.</p>
+      </x-card>
+    </section>
+
+    <section aria-labelledby="controls-title">
+      <h2 id="controls-title">Modern HTML Controls</h2>
+
+      <!-- Invalid popovertarget referencing a non-existent popover id -->
+      <button type="button" popovertarget="missing-popover-id">
+        Open missing popover
+      </button>
+
+      <!-- Focus indicator removed via :focus { outline: none } -->
+      <button type="button" class="no-focus-ring">
+        Suppress focus outline
+      </button>
+
+      <!-- Password input blocking paste -->
+      <div style="margin-top: 1rem;">
+        <label for="vault-password">Vault passphrase</label>
+        <input id="vault-password" type="password" onpaste="return false">
+      </div>
+
+      <!-- Native dialog element -->
+      <dialog id="status-dialog" aria-labelledby="dialog-heading">
+        <h3 id="dialog-heading">Maintenance window</h3>
+        <p>Scheduled upgrades run every Sunday at 02:00 UTC.</p>
+      </dialog>
+    </section>
+  </main>
+
+  <script>
+    class XBadge extends HTMLElement {
+      constructor() {
+        super();
+        const root = this.attachShadow({mode: 'open'});
+        root.innerHTML = `
+          <style>
+            .badge {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.5rem;
+              padding: 0.25rem 0.5rem;
+              background: #f1f5f9;
+              color: #0f172a;
+              border-radius: 4px;
+            }
+          </style>
+          <span class="badge">
+            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" width="16" height="16">
+            <span>Active</span>
+            <button type="button"></button>
+          </span>
+        `;
+      }
+    }
+
+    class XCard extends HTMLElement {
+      constructor() {
+        super();
+        const root = this.attachShadow({mode: 'open'});
+        root.innerHTML = `
+          <style>
+            .card {
+              border: 1px solid #cbd5e1;
+              border-radius: 8px;
+              padding: 1rem;
+              background: #ffffff;
+              color: #14181f;
+            }
+          </style>
+          <article class="card">
+            <h3><slot name="heading"></slot></h3>
+            <x-badge></x-badge>
+            <div class="body"><slot></slot></div>
+          </article>
+        `;
+      }
+    }
+
+    customElements.define('x-badge', XBadge);
+    customElements.define('x-card', XCard);
+  </script>
+</body>
+</html>

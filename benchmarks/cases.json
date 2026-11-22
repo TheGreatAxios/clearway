@@ -1,0 +1,38 @@
+[
+  {
+    "file": "small-landing.html",
+    "description": "Clean accessible marketing page with landmarks, headings, links, and forms",
+    "expectedViolationsMin": 0,
+    "expectedViolationsMax": 0,
+    "categories": ["landmarks", "headings", "forms", "contrast"]
+  },
+  {
+    "file": "medium-violations.html",
+    "description": "Page containing 15+ distinct WCAG 2.1/2.2 A/AA and ARIA violations",
+    "expectedViolationsMin": 12,
+    "expectedViolationsMax": 30,
+    "categories": ["images", "forms", "aria", "headings", "contrast", "tables", "frames"]
+  },
+  {
+    "file": "large-table.html",
+    "description": "Structured multi-section data table (~2,850 elements) for O(N) scaling",
+    "expectedViolationsMin": 0,
+    "expectedViolationsMax": 0,
+    "categories": ["tables", "scaling", "headings"]
+  },
+  {
+    "file": "modern-shadow-dom.html",
+    "description": "Nested open Shadow DOM with slots, native dialog, popovertarget, paste-blocking, focus outline suppression, z-index backdrop, and gradients",
+    "expectedViolationsMin": 3,
+    "expectedViolationsMax": 15,
+    "categories": ["shadow-dom", "dialog", "popover", "focus", "contrast"]
+  },
+  {
+    "file": "contrast-and-layout.html",
+    "description": "WCAG AA/AAA solid contrast, all-stops-failing CSS gradient, url() photo backdrop, z-index: -1 backdrop, non-focusable overflow scroll region, and cramped vs. spaced 24px targets",
+    "expectedViolationsMin": 4,
+    "expectedViolationsMax": 12,
+    "requiresBrowser": true,
+    "categories": ["contrast", "gradients", "backdrops", "scrolling", "target-size"]
+  }
+]

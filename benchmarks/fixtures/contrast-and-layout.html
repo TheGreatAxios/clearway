@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contrast, Backdrops, Scrollable Regions, and Target Size Fixture</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #ffffff;
+      color: #111827;
+      line-height: 1.5;
+    }
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    section {
+      margin-bottom: 1.75rem;
+    }
+    .aaa-pass {
+      color: #111111;
+      background: #ffffff;
+    }
+    .aa-pass {
+      color: #595959;
+      background: #ffffff;
+    }
+    .aa-fail-normal {
+      color: #9a9a9a;
+      background: #ffffff;
+    }
+    .aa-fail-large {
+      font-size: 24px;
+      font-weight: 700;
+      color: #b5b5b5;
+      background: #ffffff;
+    }
+    .gradient-all-fail {
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #e2e8f0 0%, #cbd5e1 100%);
+      color: #94a3b8;
+    }
+    .photo-backdrop {
+      padding: 1.25rem;
+      border-radius: 6px;
+      color: #ffffff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='120'%3E%3Crect width='400' height='120' fill='%231e293b'/%3E%3Ccircle cx='80' cy='60' r='50' fill='%23f8fafc'/%3E%3C/svg%3E");
+      background-size: cover;
+    }
+    .z-backdrop-wrap {
+      position: relative;
+      padding: 1.25rem;
+      border-radius: 6px;
+      color: #f8fafc;
+      overflow: hidden;
+    }
+    .z-backdrop-layer {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: #0f172a;
+    }
+    .scroll-box-fail {
+      height: 84px;
+      overflow: scroll;
+      padding: 0.75rem;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+    }
+    .scroll-box-pass {
+      height: 84px;
+      overflow: auto;
+      padding: 0.75rem;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+    }
+    .target-row {
+      display: flex;
+      align-items: center;
+      margin: 0.75rem 0;
+    }
+    .target-row-cramped {
+      gap: 0;
+    }
+    .target-row-spaced {
+      gap: 10px;
+    }
+    .btn-cramped {
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      margin: 0;
+      border: 1px solid #334155;
+      background: #ffffff;
+      color: #111827;
+      font-size: 11px;
+      line-height: 1;
+    }
+    .btn-spaced {
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      margin: 0;
+      border: 1px solid #334155;
+      background: #ffffff;
+      color: #111827;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .btn-full {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0.5rem 1rem;
+      border: 1px solid #1e293b;
+      background: #1e293b;
+      color: #ffffff;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Contrast, Backdrops, Scroll Regions, and Target Sizes</h1>
+
+    <section aria-labelledby="solid-contrast">
+      <h2 id="solid-contrast">WCAG AA and AAA Solid Contrast</h2>
+      <p class="aaa-pass">High-contrast body copy passing WCAG AAA (18.8:1).</p>
+      <p class="aa-pass">Standard body copy passing WCAG AA and AAA (7.0:1).</p>
+      <p class="aa-fail-normal">Muted gray body text failing WCAG AA normal contrast.</p>
+      <p class="aa-fail-large">Large bold heading text failing WCAG AA large contrast.</p>
+    </section>
+
+    <section aria-labelledby="gradient-contrast">
+      <h2 id="gradient-contrast">All-Stops-Failing CSS Gradient</h2>
+      <div class="gradient-all-fail">
+        <p>Low-contrast slate text where every linear-gradient stop fails 4.5:1.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="photo-contrast">
+      <h2 id="photo-contrast">Photo Backdrop via url()</h2>
+      <div class="photo-backdrop">
+        <p>White text over an inline SVG background image requires manual review.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="zindex-contrast">
+      <h2 id="zindex-contrast">Negative z-index Backdrop</h2>
+      <div class="z-backdrop-wrap">
+        <div class="z-backdrop-layer" aria-hidden="true"></div>
+        <p>White text over a z-index: -1 dark layer should pass after compositing.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="scroll-regions">
+      <h2 id="scroll-regions">Scrollable Regions</h2>
+      <div class="scroll-box-fail">
+        <p>Line 1: Non-focusable overflow scroll region with clipped content.</p>
+        <p>Line 2: Keyboard users cannot scroll this box without tabindex="0".</p>
+        <p>Line 3: Additional text to guarantee vertical overflow in the viewport.</p>
+        <p>Line 4: Final line of overflow content inside the non-focusable box.</p>
+      </div>
+      <div class="scroll-box-pass" tabindex="0" role="region" aria-label="Release notes">
+        <p>Line 1: Focusable scrollable region with tabindex="0" and an accessible name.</p>
+        <p>Line 2: Keyboard users can tab into this region and scroll with arrow keys.</p>
+        <p>Line 3: Additional text to guarantee vertical overflow in the viewport.</p>
+        <p>Line 4: Final line of overflow content inside the focusable region.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="target-sizes">
+      <h2 id="target-sizes">WCAG 2.2 Target Size (24px Minimum)</h2>
+      <div class="target-row target-row-cramped" role="group" aria-label="Cramped controls">
+        <button type="button" class="btn-cramped" aria-label="Decrease quantity">-</button>
+        <button type="button" class="btn-cramped" aria-label="Increase quantity">+</button>
+      </div>
+      <div class="target-row target-row-spaced" role="group" aria-label="Spaced controls">
+        <button type="button" class="btn-spaced" aria-label="Previous page">&lt;</button>
+        <button type="button" class="btn-spaced" aria-label="Next page">&gt;</button>
+      </div>
+      <div class="target-row">
+        <button type="button" class="btn-full">Save changes</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

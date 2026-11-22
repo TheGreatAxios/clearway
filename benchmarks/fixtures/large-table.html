@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fleet Inventory Ledger — Large Structured Table Fixture</title>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #ffffff; color: #14181f; line-height: 1.45; }
+    header, main, footer { max-width: 1120px; margin: 0 auto; padding: 1.25rem; }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #d0d7de; }
+    nav ul { display: flex; gap: 1rem; list-style: none; margin: 0; padding: 0; }
+    a { color: #0b3d91; text-decoration: underline; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 2rem; font-size: 0.9rem; }
+    th, td { border: 1px solid #cbd5e1; padding: 0.4rem 0.6rem; text-align: left; }
+    thead th { background: #f1f5f9; }
+    footer { border-top: 1px solid #d0d7de; font-size: 0.9rem; color: #334155; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="#top"><strong>Fleet Inventory Ledger</strong></a>
+    <nav aria-label="Primary sections">
+      <ul>
+        <li><a href="#edge-nodes">Edge Nodes</a></li>
+        <li><a href="#storage-nodes">Storage Nodes</a></li>
+        <li><a href="#summary">Summary</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main id="top">
+    <h1>Regional Cluster Inventory</h1>
+    <p>Synthetic multi-section inventory table with over 2,500 DOM elements for linear scaling benchmarks.</p>
+    <section id="edge-nodes" aria-labelledby="edge-heading">
+      <h2 id="edge-heading">Edge Worker Nodes</h2>
+      <table>
+        <caption>Edge worker telemetry snapshot</caption>
+        <thead>
+          <tr>
+            <th scope="col">Node ID</th>
+            <th scope="col">Region</th>
+            <th scope="col">Status</th>
+            <th scope="col">CPU</th>
+            <th scope="col">Memory</th>
+            <th scope="col">p50</th>
+            <th scope="col">p99</th>
+            <th scope="col">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr><th scope="row">edge-001</th><td>us-east-1</td><td>Degraded</td><td>22%</td><td>159 MiB</td><td>1.5 ms</td><td>9.4 ms</td><td><a href="#node-edge-001">Inspect edge-001</a></td></tr>
+        <tr><th scope="row">edge-002</th><td>eu-central-1</td><td>Standby</td><td>29%</td><td>190 MiB</td><td>1.8 ms</td><td>10.3 ms</td><td><a href="#node-edge-002">Inspect edge-002</a></td></tr>
+        <tr><th scope="row">edge-003</th><td>ap-northeast-1</td><td>Healthy</td><td>36%</td><td>221 MiB</td><td>2.1 ms</td><td>11.2 ms</td><td><a href="#node-edge-003">Inspect edge-003</a></td></tr>
+        <tr><th scope="row">edge-004</th><td>us-west-1</td><td>Degraded</td><td>43%</td><td>252 MiB</td><td>2.4 ms</td><td>12.1 ms</td><td><a href="#node-edge-004">Inspect edge-004</a></td></tr>
+        <tr><th scope="row">edge-005</th><td>us-east-1</td><td>Standby</td><td>50%</td><td>283 MiB</td><td>2.7 ms</td><td>13.0 ms</td><td><a href="#node-edge-005">Inspect edge-005</a></td></tr>
+        <tr><th scope="row">edge-006</th><td>eu-central-1</td><td>Healthy</td><td>57%</td><td>314 MiB</td><td>3.0 ms</td><td>13.9 ms</td><td><a href="#node-edge-006">Inspect edge-006</a></td></tr>
+        <tr><th scope="row">edge-007</th><td>ap-northeast-1</td><td>Degraded</td><td>64%</td><td>345 MiB</td><td>3.3 ms</td><td>14.8 ms</td><td><a href="#node-edge-007">Inspect edge-007</a></td></tr>
+        <tr><th scope="row">edge-008</th><td>us-west-1</td><td>Standby</td><td>71%</td><td>376 MiB</td><td>3.6 ms</td><td>15.7 ms</td><td><a href="#node-edge-008">Inspect edge-008</a></td></tr>
+        <tr><th scope="row">edge-009</th><td>us-east-1</td><td>Healthy</td><td>78%</td><td>407 MiB</td><td>3.9 ms</td><td>16.6 ms</td><td><a href="#node-edge-009">Inspect edge-009</a></td></tr>
+        <tr><th scope="row">edge-010</th><td>eu-central-1</td><td>Degraded</td><td>85%</td><td>438 MiB</td><td>4.2 ms</td><td>17.5 ms</td><td><a href="#node-edge-010">Inspect edge-010</a></td></tr>
+        <tr><th scope="row">edge-011</th><td>ap-northeast-1</td><td>Standby</td><td>17%</td><td>469 MiB</td><td>4.5 ms</td><td>18.4 ms</td><td><a href="#node-edge-011">Inspect edge-011</a></td></tr>
+        <tr><th scope="row">edge-012</th><td>us-west-1</td><td>Healthy</td><td>24%</td><td>500 MiB</td><td>4.8 ms</td><td>19.3 ms</td><td><a href="#node-edge-012">Inspect edge-012</a></td></tr>
+        <tr><th scope="row">edge-013</th><td>us-east-1</td><td>Degraded</td><td>31%</td><td>531 MiB</td><td>5.1 ms</td><td>20.2 ms</td><td><a href="#node-edge-013">Inspect edge-013</a></td></tr>
+        <tr><th scope="row">edge-014</th><td>eu-central-1</td><td>Standby</td><td>38%</td><td>562 MiB</td><td>5.4 ms</td><td>21.1 ms</td><td><a href="#node-edge-014">Inspect edge-014</a></td></tr>
+        <tr><th scope="row">edge-015</th><td>ap-northeast-1</td><td>Healthy</td><td>45%</td><td>593 MiB</td><td>5.7 ms</td><td>22.0 ms</td><td><a href="#node-edge-015">Inspect edge-015</a></td></tr>
+        <tr><th scope="row">edge-016</th><td>us-west-1</td><td>Degraded</td><td>52%</td><td>624 MiB</td><td>6.0 ms</td><td>22.9 ms</td><td><a href="#node-edge-016">Inspect edge-016</a></td></tr>
+        <tr><th scope="row">edge-017</th><td>us-east-1</td><td>Standby</td><td>59%</td><td>655 MiB</td><td>6.3 ms</td><td>23.8 ms</td><td><a href="#node-edge-017">Inspect edge-017</a></td></tr>
+        <tr><th scope="row">edge-018</th><td>eu-central-1</td><td>Healthy</td><td>66%</td><td>686 MiB</td><td>6.6 ms</td><td>24.7 ms</td><td><a href="#node-edge-018">Inspect edge-018</a></td></tr>
+        <tr><th scope="row">edge-019</th><td>ap-northeast-1</td><td>Degraded</td><td>73%</td><td>717 MiB</td><td>1.2 ms</td><td>25.6 ms</td><td><a href="#node-edge-019">Inspect edge-019</a></td></tr>
+        <tr><th scope="row">edge-020</th><td>us-west-1</td><td>Standby</td><td>80%</td><td>748 MiB</td><td>1.5 ms</td><td>26.5 ms</td><td><a href="#node-edge-020">Inspect edge-020</a></td></tr>
+        <tr><th scope="row">edge-021</th><td>us-east-1</td><td>Healthy</td><td>87%</td><td>779 MiB</td><td>1.8 ms</td><td>27.4 ms</td><td><a href="#node-edge-021">Inspect edge-021</a></td></tr>
+        <tr><th scope="row">edge-022</th><td>eu-central-1</td><td>Degraded</td><td>19%</td><td>810 MiB</td><td>2.1 ms</td><td>28.3 ms</td><td><a href="#node-edge-022">Inspect edge-022</a></td></tr>
+        <tr><th scope="row">edge-023</th><td>ap-northeast-1</td><td>Standby</td><td>26%</td><td>841 MiB</td><td>2.4 ms</td><td>8.5 ms</td><td><a href="#node-edge-023">Inspect edge-023</a></td></tr>
+        <tr><th scope="row">edge-024</th><td>us-west-1</td><td>Healthy</td><td>33%</td><td>872 MiB</td><td>2.7 ms</td><td>9.4 ms</td><td><a href="#node-edge-024">Inspect edge-024</a></td></tr>
+        <tr><th scope="row">edge-025</th><td>us-east-1</td><td>Degraded</td><td>40%</td><td>903 MiB</td><td>3.0 ms</td><td>10.3 ms</td><td><a href="#node-edge-025">Inspect edge-025</a></td></tr>
+        <tr><th scope="row">edge-026</th><td>eu-central-1</td><td>Standby</td><td>47%</td><td>934 MiB</td><td>3.3 ms</td><td>11.2 ms</td><td><a href="#node-edge-026">Inspect edge-026</a></td></tr>
+        <tr><th scope="row">edge-027</th><td>ap-northeast-1</td><td>Healthy</td><td>54%</td><td>965 MiB</td><td>3.6 ms</td><td>12.1 ms</td><td><a href="#node-edge-027">Inspect edge-027</a></td></tr>
+        <tr><th scope="row">edge-028</th><td>us-west-1</td><td>Degraded</td><td>61%</td><td>996 MiB</td><td>3.9 ms</td><td>13.0 ms</td><td><a href="#node-edge-028">Inspect edge-028</a></td></tr>
+        <tr><th scope="row">edge-029</th><td>us-east-1</td><td>Standby</td><td>68%</td><td>131 MiB</td><td>4.2 ms</td><td>13.9 ms</td><td><a href="#node-edge-029">Inspect edge-029</a></td></tr>
+        <tr><th scope="row">edge-030</th><td>eu-central-1</td><td>Healthy</td><td>75%</td><td>162 MiB</td><td>4.5 ms</td><td>14.8 ms</td><td><a href="#node-edge-030">Inspect edge-030</a></td></tr>
+        <tr><th scope="row">edge-031</th><td>ap-northeast-1</td><td>Degraded</td><td>82%</td><td>193 MiB</td><td>4.8 ms</td><td>15.7 ms</td><td><a href="#node-edge-031">Inspect edge-031</a></td></tr>
+        <tr><th scope="row">edge-032</th><td>us-west-1</td><td>Standby</td><td>89%</td><td>224 MiB</td><td>5.1 ms</td><td>16.6 ms</td><td><a href="#node-edge-032">Inspect edge-032</a></td></tr>
+        <tr><th scope="row">edge-033</th><td>us-east-1</td><td>Healthy</td><td>21%</td><td>255 MiB</td><td>5.4 ms</td><td>17.5 ms</td><td><a href="#node-edge-033">Inspect edge-033</a></td></tr>
+        <tr><th scope="row">edge-034</th><td>eu-central-1</td><td>Degraded</td><td>28%</td><td>286 MiB</td><td>5.7 ms</td><td>18.4 ms</td><td><a href="#node-edge-034">Inspect edge-034</a></td></tr>
+        <tr><th scope="row">edge-035</th><td>ap-northeast-1</td><td>Standby</td><td>35%</td><td>317 MiB</td><td>6.0 ms</td><td>19.3 ms</td><td><a href="#node-edge-035">Inspect edge-035</a></td></tr>
+        <tr><th scope="row">edge-036</th><td>us-west-1</td><td>Healthy</td><td>42%</td><td>348 MiB</td><td>6.3 ms</td><td>20.2 ms</td><td><a href="#node-edge-036">Inspect edge-036</a></td></tr>
+        <tr><th scope="row">edge-037</th><td>us-east-1</td><td>Degraded</td><td>49%</td><td>379 MiB</td><td>6.6 ms</td><td>21.1 ms</td><td><a href="#node-edge-037">Inspect edge-037</a></td></tr>
+        <tr><th scope="row">edge-038</th><td>eu-central-1</td><td>Standby</td><td>56%</td><td>410 MiB</td><td>1.2 ms</td><td>22.0 ms</td><td><a href="#node-edge-038">Inspect edge-038</a></td></tr>
+        <tr><th scope="row">edge-039</th><td>ap-northeast-1</td><td>Healthy</td><td>63%</td><td>441 MiB</td><td>1.5 ms</td><td>22.9 ms</td><td><a href="#node-edge-039">Inspect edge-039</a></td></tr>
+        <tr><th scope="row">edge-040</th><td>us-west-1</td><td>Degraded</td><td>70%</td><td>472 MiB</td><td>1.8 ms</td><td>23.8 ms</td><td><a href="#node-edge-040">Inspect edge-040</a></td></tr>
+        <tr><th scope="row">edge-041</th><td>us-east-1</td><td>Standby</td><td>77%</td><td>503 MiB</td><td>2.1 ms</td><td>24.7 ms</td><td><a href="#node-edge-041">Inspect edge-041</a></td></tr>
+        <tr><th scope="row">edge-042</th><td>eu-central-1</td><td>Healthy</td><td>84%</td><td>534 MiB</td><td>2.4 ms</td><td>25.6 ms</td><td><a href="#node-edge-042">Inspect edge-042</a></td></tr>
+        <tr><th scope="row">edge-043</th><td>ap-northeast-1</td><td>Degraded</td><td>16%</td><td>565 MiB</td><td>2.7 ms</td><td>26.5 ms</td><td><a href="#node-edge-043">Inspect edge-043</a></td></tr>
+        <tr><th scope="row">edge-044</th><td>us-west-1</td><td>Standby</td><td>23%</td><td>596 MiB</td><td>3.0 ms</td><td>27.4 ms</td><td><a href="#node-edge-044">Inspect edge-044</a></td></tr>
+        <tr><th scope="row">edge-045</th><td>us-east-1</td><td>Healthy</td><td>30%</td><td>627 MiB</td><td>3.3 ms</td><td>28.3 ms</td><td><a href="#node-edge-045">Inspect edge-045</a></td></tr>
+        <tr><th scope="row">edge-046</th><td>eu-central-1</td><td>Degraded</td><td>37%</td><td>658 MiB</td><td>3.6 ms</td><td>8.5 ms</td><td><a href="#node-edge-046">Inspect edge-046</a></td></tr>
+        <tr><th scope="row">edge-047</th><td>ap-northeast-1</td><td>Standby</td><td>44%</td><td>689 MiB</td><td>3.9 ms</td><td>9.4 ms</td><td><a href="#node-edge-047">Inspect edge-047</a></td></tr>
+        <tr><th scope="row">edge-048</th><td>us-west-1</td><td>Healthy</td><td>51%</td><td>720 MiB</td><td>4.2 ms</td><td>10.3 ms</td><td><a href="#node-edge-048">Inspect edge-048</a></td></tr>
+        <tr><th scope="row">edge-049</th><td>us-east-1</td><td>Degraded</td><td>58%</td><td>751 MiB</td><td>4.5 ms</td><td>11.2 ms</td><td><a href="#node-edge-049">Inspect edge-049</a></td></tr>
+        <tr><th scope="row">edge-050</th><td>eu-central-1</td><td>Standby</td><td>65%</td><td>782 MiB</td><td>4.8 ms</td><td>12.1 ms</td><td><a href="#node-edge-050">Inspect edge-050</a></td></tr>
+        <tr><th scope="row">edge-051</th><td>ap-northeast-1</td><td>Healthy</td><td>72%</td><td>813 MiB</td><td>5.1 ms</td><td>13.0 ms</td><td><a href="#node-edge-051">Inspect edge-051</a></td></tr>
+        <tr><th scope="row">edge-052</th><td>us-west-1</td><td>Degraded</td><td>79%</td><td>844 MiB</td><td>5.4 ms</td><td>13.9 ms</td><td><a href="#node-edge-052">Inspect edge-052</a></td></tr>
+        <tr><th scope="row">edge-053</th><td>us-east-1</td><td>Standby</td><td>86%</td><td>875 MiB</td><td>5.7 ms</td><td>14.8 ms</td><td><a href="#node-edge-053">Inspect edge-053</a></td></tr>
+        <tr><th scope="row">edge-054</th><td>eu-central-1</td><td>Healthy</td><td>18%</td><td>906 MiB</td><td>6.0 ms</td><td>15.7 ms</td><td><a href="#node-edge-054">Inspect edge-054</a></td></tr>
+        <tr><th scope="row">edge-055</th><td>ap-northeast-1</td><td>Degraded</td><td>25%</td><td>937 MiB</td><td>6.3 ms</td><td>16.6 ms</td><td><a href="#node-edge-055">Inspect edge-055</a></td></tr>
+        <tr><th scope="row">edge-056</th><td>us-west-1</td><td>Standby</td><td>32%</td><td>968 MiB</td><td>6.6 ms</td><td>17.5 ms</td><td><a href="#node-edge-056">Inspect edge-056</a></td></tr>
+        <tr><th scope="row">edge-057</th><td>us-east-1</td><td>Healthy</td><td>39%</td><td>999 MiB</td><td>1.2 ms</td><td>18.4 ms</td><td><a href="#node-edge-057">Inspect edge-057</a></td></tr>
+        <tr><th scope="row">edge-058</th><td>eu-central-1</td><td>Degraded</td><td>46%</td><td>134 MiB</td><td>1.5 ms</td><td>19.3 ms</td><td><a href="#node-edge-058">Inspect edge-058</a></td></tr>
+        <tr><th scope="row">edge-059</th><td>ap-northeast-1</td><td>Standby</td><td>53%</td><td>165 MiB</td><td>1.8 ms</td><td>20.2 ms</td><td><a href="#node-edge-059">Inspect edge-059</a></td></tr>
+        <tr><th scope="row">edge-060</th><td>us-west-1</td><td>Healthy</td><td>60%</td><td>196 MiB</td><td>2.1 ms</td><td>21.1 ms</td><td><a href="#node-edge-060">Inspect edge-060</a></td></tr>
+        <tr><th scope="row">edge-061</th><td>us-east-1</td><td>Degraded</td><td>67%</td><td>227 MiB</td><td>2.4 ms</td><td>22.0 ms</td><td><a href="#node-edge-061">Inspect edge-061</a></td></tr>
+        <tr><th scope="row">edge-062</th><td>eu-central-1</td><td>Standby</td><td>74%</td><td>258 MiB</td><td>2.7 ms</td><td>22.9 ms</td><td><a href="#node-edge-062">Inspect edge-062</a></td></tr>
+        <tr><th scope="row">edge-063</th><td>ap-northeast-1</td><td>Healthy</td><td>81%</td><td>289 MiB</td><td>3.0 ms</td><td>23.8 ms</td><td><a href="#node-edge-063">Inspect edge-063</a></td></tr>
+        <tr><th scope="row">edge-064</th><td>us-west-1</td><td>Degraded</td><td>88%</td><td>320 MiB</td><td>3.3 ms</td><td>24.7 ms</td><td><a href="#node-edge-064">Inspect edge-064</a></td></tr>
+        <tr><th scope="row">edge-065</th><td>us-east-1</td><td>Standby</td><td>20%</td><td>351 MiB</td><td>3.6 ms</td><td>25.6 ms</td><td><a href="#node-edge-065">Inspect edge-065</a></td></tr>
+        <tr><th scope="row">edge-066</th><td>eu-central-1</td><td>Healthy</td><td>27%</td><td>382 MiB</td><td>3.9 ms</td><td>26.5 ms</td><td><a href="#node-edge-066">Inspect edge-066</a></td></tr>
+        <tr><th scope="row">edge-067</th><td>ap-northeast-1</td><td>Degraded</td><td>34%</td><td>413 MiB</td><td>4.2 ms</td><td>27.4 ms</td><td><a href="#node-edge-067">Inspect edge-067</a></td></tr>
+        <tr><th scope="row">edge-068</th><td>us-west-1</td><td>Standby</td><td>41%</td><td>444 MiB</td><td>4.5 ms</td><td>28.3 ms</td><td><a href="#node-edge-068">Inspect edge-068</a></td></tr>
+        <tr><th scope="row">edge-069</th><td>us-east-1</td><td>Healthy</td><td>48%</td><td>475 MiB</td><td>4.8 ms</td><td>8.5 ms</td><td><a href="#node-edge-069">Inspect edge-069</a></td></tr>
+        <tr><th scope="row">edge-070</th><td>eu-central-1</td><td>Degraded</td><td>55%</td><td>506 MiB</td><td>5.1 ms</td><td>9.4 ms</td><td><a href="#node-edge-070">Inspect edge-070</a></td></tr>
+        <tr><th scope="row">edge-071</th><td>ap-northeast-1</td><td>Standby</td><td>62%</td><td>537 MiB</td><td>5.4 ms</td><td>10.3 ms</td><td><a href="#node-edge-071">Inspect edge-071</a></td></tr>
+        <tr><th scope="row">edge-072</th><td>us-west-1</td><td>Healthy</td><td>69%</td><td>568 MiB</td><td>5.7 ms</td><td>11.2 ms</td><td><a href="#node-edge-072">Inspect edge-072</a></td></tr>
+        <tr><th scope="row">edge-073</th><td>us-east-1</td><td>Degraded</td><td>76%</td><td>599 MiB</td><td>6.0 ms</td><td>12.1 ms</td><td><a href="#node-edge-073">Inspect edge-073</a></td></tr>
+        <tr><th scope="row">edge-074</th><td>eu-central-1</td><td>Standby</td><td>83%</td><td>630 MiB</td><td>6.3 ms</td><td>13.0 ms</td><td><a href="#node-edge-074">Inspect edge-074</a></td></tr>
+        <tr><th scope="row">edge-075</th><td>ap-northeast-1</td><td>Healthy</td><td>15%</td><td>661 MiB</td><td>6.6 ms</td><td>13.9 ms</td><td><a href="#node-edge-075">Inspect edge-075</a></td></tr>
+        <tr><th scope="row">edge-076</th><td>us-west-1</td><td>Degraded</td><td>22%</td><td>692 MiB</td><td>1.2 ms</td><td>14.8 ms</td><td><a href="#node-edge-076">Inspect edge-076</a></td></tr>
+        <tr><th scope="row">edge-077</th><td>us-east-1</td><td>Standby</td><td>29%</td><td>723 MiB</td><td>1.5 ms</td><td>15.7 ms</td><td><a href="#node-edge-077">Inspect edge-077</a></td></tr>
+        <tr><th scope="row">edge-078</th><td>eu-central-1</td><td>Healthy</td><td>36%</td><td>754 MiB</td><td>1.8 ms</td><td>16.6 ms</td><td><a href="#node-edge-078">Inspect edge-078</a></td></tr>
+        <tr><th scope="row">edge-079</th><td>ap-northeast-1</td><td>Degraded</td><td>43%</td><td>785 MiB</td><td>2.1 ms</td><td>17.5 ms</td><td><a href="#node-edge-079">Inspect edge-079</a></td></tr>
+        <tr><th scope="row">edge-080</th><td>us-west-1</td><td>Standby</td><td>50%</td><td>816 MiB</td><td>2.4 ms</td><td>18.4 ms</td><td><a href="#node-edge-080">Inspect edge-080</a></td></tr>
+        <tr><th scope="row">edge-081</th><td>us-east-1</td><td>Healthy</td><td>57%</td><td>847 MiB</td><td>2.7 ms</td><td>19.3 ms</td><td><a href="#node-edge-081">Inspect edge-081</a></td></tr>
+        <tr><th scope="row">edge-082</th><td>eu-central-1</td><td>Degraded</td><td>64%</td><td>878 MiB</td><td>3.0 ms</td><td>20.2 ms</td><td><a href="#node-edge-082">Inspect edge-082</a></td></tr>
+        <tr><th scope="row">edge-083</th><td>ap-northeast-1</td><td>Standby</td><td>71%</td><td>909 MiB</td><td>3.3 ms</td><td>21.1 ms</td><td><a href="#node-edge-083">Inspect edge-083</a></td></tr>
+        <tr><th scope="row">edge-084</th><td>us-west-1</td><td>Healthy</td><td>78%</td><td>940 MiB</td><td>3.6 ms</td><td>22.0 ms</td><td><a href="#node-edge-084">Inspect edge-084</a></td></tr>
+        <tr><th scope="row">edge-085</th><td>us-east-1</td><td>Degraded</td><td>85%</td><td>971 MiB</td><td>3.9 ms</td><td>22.9 ms</td><td><a href="#node-edge-085">Inspect edge-085</a></td></tr>
+        <tr><th scope="row">edge-086</th><td>eu-central-1</td><td>Standby</td><td>17%</td><td>1002 MiB</td><td>4.2 ms</td><td>23.8 ms</td><td><a href="#node-edge-086">Inspect edge-086</a></td></tr>
+        <tr><th scope="row">edge-087</th><td>ap-northeast-1</td><td>Healthy</td><td>24%</td><td>137 MiB</td><td>4.5 ms</td><td>24.7 ms</td><td><a href="#node-edge-087">Inspect edge-087</a></td></tr>
+        <tr><th scope="row">edge-088</th><td>us-west-1</td><td>Degraded</td><td>31%</td><td>168 MiB</td><td>4.8 ms</td><td>25.6 ms</td><td><a href="#node-edge-088">Inspect edge-088</a></td></tr>
+        <tr><th scope="row">edge-089</th><td>us-east-1</td><td>Standby</td><td>38%</td><td>199 MiB</td><td>5.1 ms</td><td>26.5 ms</td><td><a href="#node-edge-089">Inspect edge-089</a></td></tr>
+        <tr><th scope="row">edge-090</th><td>eu-central-1</td><td>Healthy</td><td>45%</td><td>230 MiB</td><td>5.4 ms</td><td>27.4 ms</td><td><a href="#node-edge-090">Inspect edge-090</a></td></tr>
+        <tr><th scope="row">edge-091</th><td>ap-northeast-1</td><td>Degraded</td><td>52%</td><td>261 MiB</td><td>5.7 ms</td><td>28.3 ms</td><td><a href="#node-edge-091">Inspect edge-091</a></td></tr>
+        <tr><th scope="row">edge-092</th><td>us-west-1</td><td>Standby</td><td>59%</td><td>292 MiB</td><td>6.0 ms</td><td>8.5 ms</td><td><a href="#node-edge-092">Inspect edge-092</a></td></tr>
+        <tr><th scope="row">edge-093</th><td>us-east-1</td><td>Healthy</td><td>66%</td><td>323 MiB</td><td>6.3 ms</td><td>9.4 ms</td><td><a href="#node-edge-093">Inspect edge-093</a></td></tr>
+        <tr><th scope="row">edge-094</th><td>eu-central-1</td><td>Degraded</td><td>73%</td><td>354 MiB</td><td>6.6 ms</td><td>10.3 ms</td><td><a href="#node-edge-094">Inspect edge-094</a></td></tr>
+        <tr><th scope="row">edge-095</th><td>ap-northeast-1</td><td>Standby</td><td>80%</td><td>385 MiB</td><td>1.2 ms</td><td>11.2 ms</td><td><a href="#node-edge-095">Inspect edge-095</a></td></tr>
+        <tr><th scope="row">edge-096</th><td>us-west-1</td><td>Healthy</td><td>87%</td><td>416 MiB</td><td>1.5 ms</td><td>12.1 ms</td><td><a href="#node-edge-096">Inspect edge-096</a></td></tr>
+        <tr><th scope="row">edge-097</th><td>us-east-1</td><td>Degraded</td><td>19%</td><td>447 MiB</td><td>1.8 ms</td><td>13.0 ms</td><td><a href="#node-edge-097">Inspect edge-097</a></td></tr>
+        <tr><th scope="row">edge-098</th><td>eu-central-1</td><td>Standby</td><td>26%</td><td>478 MiB</td><td>2.1 ms</td><td>13.9 ms</td><td><a href="#node-edge-098">Inspect edge-098</a></td></tr>
+        <tr><th scope="row">edge-099</th><td>ap-northeast-1</td><td>Healthy</td><td>33%</td><td>509 MiB</td><td>2.4 ms</td><td>14.8 ms</td><td><a href="#node-edge-099">Inspect edge-099</a></td></tr>
+        <tr><th scope="row">edge-100</th><td>us-west-1</td><td>Degraded</td><td>40%</td><td>540 MiB</td><td>2.7 ms</td><td>15.7 ms</td><td><a href="#node-edge-100">Inspect edge-100</a></td></tr>
+        <tr><th scope="row">edge-101</th><td>us-east-1</td><td>Standby</td><td>47%</td><td>571 MiB</td><td>3.0 ms</td><td>16.6 ms</td><td><a href="#node-edge-101">Inspect edge-101</a></td></tr>
+        <tr><th scope="row">edge-102</th><td>eu-central-1</td><td>Healthy</td><td>54%</td><td>602 MiB</td><td>3.3 ms</td><td>17.5 ms</td><td><a href="#node-edge-102">Inspect edge-102</a></td></tr>
+        <tr><th scope="row">edge-103</th><td>ap-northeast-1</td><td>Degraded</td><td>61%</td><td>633 MiB</td><td>3.6 ms</td><td>18.4 ms</td><td><a href="#node-edge-103">Inspect edge-103</a></td></tr>
+        <tr><th scope="row">edge-104</th><td>us-west-1</td><td>Standby</td><td>68%</td><td>664 MiB</td><td>3.9 ms</td><td>19.3 ms</td><td><a href="#node-edge-104">Inspect edge-104</a></td></tr>
+        <tr><th scope="row">edge-105</th><td>us-east-1</td><td>Healthy</td><td>75%</td><td>695 MiB</td><td>4.2 ms</td><td>20.2 ms</td><td><a href="#node-edge-105">Inspect edge-105</a></td></tr>
+        <tr><th scope="row">edge-106</th><td>eu-central-1</td><td>Degraded</td><td>82%</td><td>726 MiB</td><td>4.5 ms</td><td>21.1 ms</td><td><a href="#node-edge-106">Inspect edge-106</a></td></tr>
+        <tr><th scope="row">edge-107</th><td>ap-northeast-1</td><td>Standby</td><td>89%</td><td>757 MiB</td><td>4.8 ms</td><td>22.0 ms</td><td><a href="#node-edge-107">Inspect edge-107</a></td></tr>
+        <tr><th scope="row">edge-108</th><td>us-west-1</td><td>Healthy</td><td>21%</td><td>788 MiB</td><td>5.1 ms</td><td>22.9 ms</td><td><a href="#node-edge-108">Inspect edge-108</a></td></tr>
+        <tr><th scope="row">edge-109</th><td>us-east-1</td><td>Degraded</td><td>28%</td><td>819 MiB</td><td>5.4 ms</td><td>23.8 ms</td><td><a href="#node-edge-109">Inspect edge-109</a></td></tr>
+        <tr><th scope="row">edge-110</th><td>eu-central-1</td><td>Standby</td><td>35%</td><td>850 MiB</td><td>5.7 ms</td><td>24.7 ms</td><td><a href="#node-edge-110">Inspect edge-110</a></td></tr>
+        <tr><th scope="row">edge-111</th><td>ap-northeast-1</td><td>Healthy</td><td>42%</td><td>881 MiB</td><td>6.0 ms</td><td>25.6 ms</td><td><a href="#node-edge-111">Inspect edge-111</a></td></tr>
+        <tr><th scope="row">edge-112</th><td>us-west-1</td><td>Degraded</td><td>49%</td><td>912 MiB</td><td>6.3 ms</td><td>26.5 ms</td><td><a href="#node-edge-112">Inspect edge-112</a></td></tr>
+        <tr><th scope="row">edge-113</th><td>us-east-1</td><td>Standby</td><td>56%</td><td>943 MiB</td><td>6.6 ms</td><td>27.4 ms</td><td><a href="#node-edge-113">Inspect edge-113</a></td></tr>
+        <tr><th scope="row">edge-114</th><td>eu-central-1</td><td>Healthy</td><td>63%</td><td>974 MiB</td><td>1.2 ms</td><td>28.3 ms</td><td><a href="#node-edge-114">Inspect edge-114</a></td></tr>
+        <tr><th scope="row">edge-115</th><td>ap-northeast-1</td><td>Degraded</td><td>70%</td><td>1005 MiB</td><td>1.5 ms</td><td>8.5 ms</td><td><a href="#node-edge-115">Inspect edge-115</a></td></tr>
+        <tr><th scope="row">edge-116</th><td>us-west-1</td><td>Standby</td><td>77%</td><td>140 MiB</td><td>1.8 ms</td><td>9.4 ms</td><td><a href="#node-edge-116">Inspect edge-116</a></td></tr>
+        <tr><th scope="row">edge-117</th><td>us-east-1</td><td>Healthy</td><td>84%</td><td>171 MiB</td><td>2.1 ms</td><td>10.3 ms</td><td><a href="#node-edge-117">Inspect edge-117</a></td></tr>
+        <tr><th scope="row">edge-118</th><td>eu-central-1</td><td>Degraded</td><td>16%</td><td>202 MiB</td><td>2.4 ms</td><td>11.2 ms</td><td><a href="#node-edge-118">Inspect edge-118</a></td></tr>
+        <tr><th scope="row">edge-119</th><td>ap-northeast-1</td><td>Standby</td><td>23%</td><td>233 MiB</td><td>2.7 ms</td><td>12.1 ms</td><td><a href="#node-edge-119">Inspect edge-119</a></td></tr>
+        <tr><th scope="row">edge-120</th><td>us-west-1</td><td>Healthy</td><td>30%</td><td>264 MiB</td><td>3.0 ms</td><td>13.0 ms</td><td><a href="#node-edge-120">Inspect edge-120</a></td></tr>
+        <tr><th scope="row">edge-121</th><td>us-east-1</td><td>Degraded</td><td>37%</td><td>295 MiB</td><td>3.3 ms</td><td>13.9 ms</td><td><a href="#node-edge-121">Inspect edge-121</a></td></tr>
+        <tr><th scope="row">edge-122</th><td>eu-central-1</td><td>Standby</td><td>44%</td><td>326 MiB</td><td>3.6 ms</td><td>14.8 ms</td><td><a href="#node-edge-122">Inspect edge-122</a></td></tr>
+        <tr><th scope="row">edge-123</th><td>ap-northeast-1</td><td>Healthy</td><td>51%</td><td>357 MiB</td><td>3.9 ms</td><td>15.7 ms</td><td><a href="#node-edge-123">Inspect edge-123</a></td></tr>
+        <tr><th scope="row">edge-124</th><td>us-west-1</td><td>Degraded</td><td>58%</td><td>388 MiB</td><td>4.2 ms</td><td>16.6 ms</td><td><a href="#node-edge-124">Inspect edge-124</a></td></tr>
+        <tr><th scope="row">edge-125</th><td>us-east-1</td><td>Standby</td><td>65%</td><td>419 MiB</td><td>4.5 ms</td><td>17.5 ms</td><td><a href="#node-edge-125">Inspect edge-125</a></td></tr>
+        <tr><th scope="row">edge-126</th><td>eu-central-1</td><td>Healthy</td><td>72%</td><td>450 MiB</td><td>4.8 ms</td><td>18.4 ms</td><td><a href="#node-edge-126">Inspect edge-126</a></td></tr>
+        <tr><th scope="row">edge-127</th><td>ap-northeast-1</td><td>Degraded</td><td>79%</td><td>481 MiB</td><td>5.1 ms</td><td>19.3 ms</td><td><a href="#node-edge-127">Inspect edge-127</a></td></tr>
+        <tr><th scope="row">edge-128</th><td>us-west-1</td><td>Standby</td><td>86%</td><td>512 MiB</td><td>5.4 ms</td><td>20.2 ms</td><td><a href="#node-edge-128">Inspect edge-128</a></td></tr>
+        <tr><th scope="row">edge-129</th><td>us-east-1</td><td>Healthy</td><td>18%</td><td>543 MiB</td><td>5.7 ms</td><td>21.1 ms</td><td><a href="#node-edge-129">Inspect edge-129</a></td></tr>
+        <tr><th scope="row">edge-130</th><td>eu-central-1</td><td>Degraded</td><td>25%</td><td>574 MiB</td><td>6.0 ms</td><td>22.0 ms</td><td><a href="#node-edge-130">Inspect edge-130</a></td></tr>
+        <tr><th scope="row">edge-131</th><td>ap-northeast-1</td><td>Standby</td><td>32%</td><td>605 MiB</td><td>6.3 ms</td><td>22.9 ms</td><td><a href="#node-edge-131">Inspect edge-131</a></td></tr>
+        <tr><th scope="row">edge-132</th><td>us-west-1</td><td>Healthy</td><td>39%</td><td>636 MiB</td><td>6.6 ms</td><td>23.8 ms</td><td><a href="#node-edge-132">Inspect edge-132</a></td></tr>
+        <tr><th scope="row">edge-133</th><td>us-east-1</td><td>Degraded</td><td>46%</td><td>667 MiB</td><td>1.2 ms</td><td>24.7 ms</td><td><a href="#node-edge-133">Inspect edge-133</a></td></tr>
+        <tr><th scope="row">edge-134</th><td>eu-central-1</td><td>Standby</td><td>53%</td><td>698 MiB</td><td>1.5 ms</td><td>25.6 ms</td><td><a href="#node-edge-134">Inspect edge-134</a></td></tr>
+        <tr><th scope="row">edge-135</th><td>ap-northeast-1</td><td>Healthy</td><td>60%</td><td>729 MiB</td><td>1.8 ms</td><td>26.5 ms</td><td><a href="#node-edge-135">Inspect edge-135</a></td></tr>
+        <tr><th scope="row">edge-136</th><td>us-west-1</td><td>Degraded</td><td>67%</td><td>760 MiB</td><td>2.1 ms</td><td>27.4 ms</td><td><a href="#node-edge-136">Inspect edge-136</a></td></tr>
+        <tr><th scope="row">edge-137</th><td>us-east-1</td><td>Standby</td><td>74%</td><td>791 MiB</td><td>2.4 ms</td><td>28.3 ms</td><td><a href="#node-edge-137">Inspect edge-137</a></td></tr>
+        <tr><th scope="row">edge-138</th><td>eu-central-1</td><td>Healthy</td><td>81%</td><td>822 MiB</td><td>2.7 ms</td><td>8.5 ms</td><td><a href="#node-edge-138">Inspect edge-138</a></td></tr>
+        <tr><th scope="row">edge-139</th><td>ap-northeast-1</td><td>Degraded</td><td>88%</td><td>853 MiB</td><td>3.0 ms</td><td>9.4 ms</td><td><a href="#node-edge-139">Inspect edge-139</a></td></tr>
+        <tr><th scope="row">edge-140</th><td>us-west-1</td><td>Standby</td><td>20%</td><td>884 MiB</td><td>3.3 ms</td><td>10.3 ms</td><td><a href="#node-edge-140">Inspect edge-140</a></td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section id="storage-nodes" aria-labelledby="storage-heading">
+      <h2 id="storage-heading">Storage Shard Nodes</h2>
+      <table>
+        <caption>Storage shard telemetry snapshot</caption>
+        <thead>
+          <tr>
+            <th scope="col">Node ID</th>
+            <th scope="col">Region</th>
+            <th scope="col">Status</th>
+            <th scope="col">CPU</th>
+            <th scope="col">Memory</th>
+            <th scope="col">p50</th>
+            <th scope="col">p99</th>
+            <th scope="col">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr><th scope="row">store-001</th><td>us-east-1</td><td>Degraded</td><td>22%</td><td>159 MiB</td><td>1.5 ms</td><td>9.4 ms</td><td><a href="#node-store-001">Inspect store-001</a></td></tr>
+        <tr><th scope="row">store-002</th><td>eu-central-1</td><td>Standby</td><td>29%</td><td>190 MiB</td><td>1.8 ms</td><td>10.3 ms</td><td><a href="#node-store-002">Inspect store-002</a></td></tr>
+        <tr><th scope="row">store-003</th><td>ap-northeast-1</td><td>Healthy</td><td>36%</td><td>221 MiB</td><td>2.1 ms</td><td>11.2 ms</td><td><a href="#node-store-003">Inspect store-003</a></td></tr>
+        <tr><th scope="row">store-004</th><td>us-west-1</td><td>Degraded</td><td>43%</td><td>252 MiB</td><td>2.4 ms</td><td>12.1 ms</td><td><a href="#node-store-004">Inspect store-004</a></td></tr>
+        <tr><th scope="row">store-005</th><td>us-east-1</td><td>Standby</td><td>50%</td><td>283 MiB</td><td>2.7 ms</td><td>13.0 ms</td><td><a href="#node-store-005">Inspect store-005</a></td></tr>
+        <tr><th scope="row">store-006</th><td>eu-central-1</td><td>Healthy</td><td>57%</td><td>314 MiB</td><td>3.0 ms</td><td>13.9 ms</td><td><a href="#node-store-006">Inspect store-006</a></td></tr>
+        <tr><th scope="row">store-007</th><td>ap-northeast-1</td><td>Degraded</td><td>64%</td><td>345 MiB</td><td>3.3 ms</td><td>14.8 ms</td><td><a href="#node-store-007">Inspect store-007</a></td></tr>
+        <tr><th scope="row">store-008</th><td>us-west-1</td><td>Standby</td><td>71%</td><td>376 MiB</td><td>3.6 ms</td><td>15.7 ms</td><td><a href="#node-store-008">Inspect store-008</a></td></tr>
+        <tr><th scope="row">store-009</th><td>us-east-1</td><td>Healthy</td><td>78%</td><td>407 MiB</td><td>3.9 ms</td><td>16.6 ms</td><td><a href="#node-store-009">Inspect store-009</a></td></tr>
+        <tr><th scope="row">store-010</th><td>eu-central-1</td><td>Degraded</td><td>85%</td><td>438 MiB</td><td>4.2 ms</td><td>17.5 ms</td><td><a href="#node-store-010">Inspect store-010</a></td></tr>
+        <tr><th scope="row">store-011</th><td>ap-northeast-1</td><td>Standby</td><td>17%</td><td>469 MiB</td><td>4.5 ms</td><td>18.4 ms</td><td><a href="#node-store-011">Inspect store-011</a></td></tr>
+        <tr><th scope="row">store-012</th><td>us-west-1</td><td>Healthy</td><td>24%</td><td>500 MiB</td><td>4.8 ms</td><td>19.3 ms</td><td><a href="#node-store-012">Inspect store-012</a></td></tr>
+        <tr><th scope="row">store-013</th><td>us-east-1</td><td>Degraded</td><td>31%</td><td>531 MiB</td><td>5.1 ms</td><td>20.2 ms</td><td><a href="#node-store-013">Inspect store-013</a></td></tr>
+        <tr><th scope="row">store-014</th><td>eu-central-1</td><td>Standby</td><td>38%</td><td>562 MiB</td><td>5.4 ms</td><td>21.1 ms</td><td><a href="#node-store-014">Inspect store-014</a></td></tr>
+        <tr><th scope="row">store-015</th><td>ap-northeast-1</td><td>Healthy</td><td>45%</td><td>593 MiB</td><td>5.7 ms</td><td>22.0 ms</td><td><a href="#node-store-015">Inspect store-015</a></td></tr>
+        <tr><th scope="row">store-016</th><td>us-west-1</td><td>Degraded</td><td>52%</td><td>624 MiB</td><td>6.0 ms</td><td>22.9 ms</td><td><a href="#node-store-016">Inspect store-016</a></td></tr>
+        <tr><th scope="row">store-017</th><td>us-east-1</td><td>Standby</td><td>59%</td><td>655 MiB</td><td>6.3 ms</td><td>23.8 ms</td><td><a href="#node-store-017">Inspect store-017</a></td></tr>
+        <tr><th scope="row">store-018</th><td>eu-central-1</td><td>Healthy</td><td>66%</td><td>686 MiB</td><td>6.6 ms</td><td>24.7 ms</td><td><a href="#node-store-018">Inspect store-018</a></td></tr>
+        <tr><th scope="row">store-019</th><td>ap-northeast-1</td><td>Degraded</td><td>73%</td><td>717 MiB</td><td>1.2 ms</td><td>25.6 ms</td><td><a href="#node-store-019">Inspect store-019</a></td></tr>
+        <tr><th scope="row">store-020</th><td>us-west-1</td><td>Standby</td><td>80%</td><td>748 MiB</td><td>1.5 ms</td><td>26.5 ms</td><td><a href="#node-store-020">Inspect store-020</a></td></tr>
+        <tr><th scope="row">store-021</th><td>us-east-1</td><td>Healthy</td><td>87%</td><td>779 MiB</td><td>1.8 ms</td><td>27.4 ms</td><td><a href="#node-store-021">Inspect store-021</a></td></tr>
+        <tr><th scope="row">store-022</th><td>eu-central-1</td><td>Degraded</td><td>19%</td><td>810 MiB</td><td>2.1 ms</td><td>28.3 ms</td><td><a href="#node-store-022">Inspect store-022</a></td></tr>
+        <tr><th scope="row">store-023</th><td>ap-northeast-1</td><td>Standby</td><td>26%</td><td>841 MiB</td><td>2.4 ms</td><td>8.5 ms</td><td><a href="#node-store-023">Inspect store-023</a></td></tr>
+        <tr><th scope="row">store-024</th><td>us-west-1</td><td>Healthy</td><td>33%</td><td>872 MiB</td><td>2.7 ms</td><td>9.4 ms</td><td><a href="#node-store-024">Inspect store-024</a></td></tr>
+        <tr><th scope="row">store-025</th><td>us-east-1</td><td>Degraded</td><td>40%</td><td>903 MiB</td><td>3.0 ms</td><td>10.3 ms</td><td><a href="#node-store-025">Inspect store-025</a></td></tr>
+        <tr><th scope="row">store-026</th><td>eu-central-1</td><td>Standby</td><td>47%</td><td>934 MiB</td><td>3.3 ms</td><td>11.2 ms</td><td><a href="#node-store-026">Inspect store-026</a></td></tr>
+        <tr><th scope="row">store-027</th><td>ap-northeast-1</td><td>Healthy</td><td>54%</td><td>965 MiB</td><td>3.6 ms</td><td>12.1 ms</td><td><a href="#node-store-027">Inspect store-027</a></td></tr>
+        <tr><th scope="row">store-028</th><td>us-west-1</td><td>Degraded</td><td>61%</td><td>996 MiB</td><td>3.9 ms</td><td>13.0 ms</td><td><a href="#node-store-028">Inspect store-028</a></td></tr>
+        <tr><th scope="row">store-029</th><td>us-east-1</td><td>Standby</td><td>68%</td><td>131 MiB</td><td>4.2 ms</td><td>13.9 ms</td><td><a href="#node-store-029">Inspect store-029</a></td></tr>
+        <tr><th scope="row">store-030</th><td>eu-central-1</td><td>Healthy</td><td>75%</td><td>162 MiB</td><td>4.5 ms</td><td>14.8 ms</td><td><a href="#node-store-030">Inspect store-030</a></td></tr>
+        <tr><th scope="row">store-031</th><td>ap-northeast-1</td><td>Degraded</td><td>82%</td><td>193 MiB</td><td>4.8 ms</td><td>15.7 ms</td><td><a href="#node-store-031">Inspect store-031</a></td></tr>
+        <tr><th scope="row">store-032</th><td>us-west-1</td><td>Standby</td><td>89%</td><td>224 MiB</td><td>5.1 ms</td><td>16.6 ms</td><td><a href="#node-store-032">Inspect store-032</a></td></tr>
+        <tr><th scope="row">store-033</th><td>us-east-1</td><td>Healthy</td><td>21%</td><td>255 MiB</td><td>5.4 ms</td><td>17.5 ms</td><td><a href="#node-store-033">Inspect store-033</a></td></tr>
+        <tr><th scope="row">store-034</th><td>eu-central-1</td><td>Degraded</td><td>28%</td><td>286 MiB</td><td>5.7 ms</td><td>18.4 ms</td><td><a href="#node-store-034">Inspect store-034</a></td></tr>
+        <tr><th scope="row">store-035</th><td>ap-northeast-1</td><td>Standby</td><td>35%</td><td>317 MiB</td><td>6.0 ms</td><td>19.3 ms</td><td><a href="#node-store-035">Inspect store-035</a></td></tr>
+        <tr><th scope="row">store-036</th><td>us-west-1</td><td>Healthy</td><td>42%</td><td>348 MiB</td><td>6.3 ms</td><td>20.2 ms</td><td><a href="#node-store-036">Inspect store-036</a></td></tr>
+        <tr><th scope="row">store-037</th><td>us-east-1</td><td>Degraded</td><td>49%</td><td>379 MiB</td><td>6.6 ms</td><td>21.1 ms</td><td><a href="#node-store-037">Inspect store-037</a></td></tr>
+        <tr><th scope="row">store-038</th><td>eu-central-1</td><td>Standby</td><td>56%</td><td>410 MiB</td><td>1.2 ms</td><td>22.0 ms</td><td><a href="#node-store-038">Inspect store-038</a></td></tr>
+        <tr><th scope="row">store-039</th><td>ap-northeast-1</td><td>Healthy</td><td>63%</td><td>441 MiB</td><td>1.5 ms</td><td>22.9 ms</td><td><a href="#node-store-039">Inspect store-039</a></td></tr>
+        <tr><th scope="row">store-040</th><td>us-west-1</td><td>Degraded</td><td>70%</td><td>472 MiB</td><td>1.8 ms</td><td>23.8 ms</td><td><a href="#node-store-040">Inspect store-040</a></td></tr>
+        <tr><th scope="row">store-041</th><td>us-east-1</td><td>Standby</td><td>77%</td><td>503 MiB</td><td>2.1 ms</td><td>24.7 ms</td><td><a href="#node-store-041">Inspect store-041</a></td></tr>
+        <tr><th scope="row">store-042</th><td>eu-central-1</td><td>Healthy</td><td>84%</td><td>534 MiB</td><td>2.4 ms</td><td>25.6 ms</td><td><a href="#node-store-042">Inspect store-042</a></td></tr>
+        <tr><th scope="row">store-043</th><td>ap-northeast-1</td><td>Degraded</td><td>16%</td><td>565 MiB</td><td>2.7 ms</td><td>26.5 ms</td><td><a href="#node-store-043">Inspect store-043</a></td></tr>
+        <tr><th scope="row">store-044</th><td>us-west-1</td><td>Standby</td><td>23%</td><td>596 MiB</td><td>3.0 ms</td><td>27.4 ms</td><td><a href="#node-store-044">Inspect store-044</a></td></tr>
+        <tr><th scope="row">store-045</th><td>us-east-1</td><td>Healthy</td><td>30%</td><td>627 MiB</td><td>3.3 ms</td><td>28.3 ms</td><td><a href="#node-store-045">Inspect store-045</a></td></tr>
+        <tr><th scope="row">store-046</th><td>eu-central-1</td><td>Degraded</td><td>37%</td><td>658 MiB</td><td>3.6 ms</td><td>8.5 ms</td><td><a href="#node-store-046">Inspect store-046</a></td></tr>
+        <tr><th scope="row">store-047</th><td>ap-northeast-1</td><td>Standby</td><td>44%</td><td>689 MiB</td><td>3.9 ms</td><td>9.4 ms</td><td><a href="#node-store-047">Inspect store-047</a></td></tr>
+        <tr><th scope="row">store-048</th><td>us-west-1</td><td>Healthy</td><td>51%</td><td>720 MiB</td><td>4.2 ms</td><td>10.3 ms</td><td><a href="#node-store-048">Inspect store-048</a></td></tr>
+        <tr><th scope="row">store-049</th><td>us-east-1</td><td>Degraded</td><td>58%</td><td>751 MiB</td><td>4.5 ms</td><td>11.2 ms</td><td><a href="#node-store-049">Inspect store-049</a></td></tr>
+        <tr><th scope="row">store-050</th><td>eu-central-1</td><td>Standby</td><td>65%</td><td>782 MiB</td><td>4.8 ms</td><td>12.1 ms</td><td><a href="#node-store-050">Inspect store-050</a></td></tr>
+        <tr><th scope="row">store-051</th><td>ap-northeast-1</td><td>Healthy</td><td>72%</td><td>813 MiB</td><td>5.1 ms</td><td>13.0 ms</td><td><a href="#node-store-051">Inspect store-051</a></td></tr>
+        <tr><th scope="row">store-052</th><td>us-west-1</td><td>Degraded</td><td>79%</td><td>844 MiB</td><td>5.4 ms</td><td>13.9 ms</td><td><a href="#node-store-052">Inspect store-052</a></td></tr>
+        <tr><th scope="row">store-053</th><td>us-east-1</td><td>Standby</td><td>86%</td><td>875 MiB</td><td>5.7 ms</td><td>14.8 ms</td><td><a href="#node-store-053">Inspect store-053</a></td></tr>
+        <tr><th scope="row">store-054</th><td>eu-central-1</td><td>Healthy</td><td>18%</td><td>906 MiB</td><td>6.0 ms</td><td>15.7 ms</td><td><a href="#node-store-054">Inspect store-054</a></td></tr>
+        <tr><th scope="row">store-055</th><td>ap-northeast-1</td><td>Degraded</td><td>25%</td><td>937 MiB</td><td>6.3 ms</td><td>16.6 ms</td><td><a href="#node-store-055">Inspect store-055</a></td></tr>
+        <tr><th scope="row">store-056</th><td>us-west-1</td><td>Standby</td><td>32%</td><td>968 MiB</td><td>6.6 ms</td><td>17.5 ms</td><td><a href="#node-store-056">Inspect store-056</a></td></tr>
+        <tr><th scope="row">store-057</th><td>us-east-1</td><td>Healthy</td><td>39%</td><td>999 MiB</td><td>1.2 ms</td><td>18.4 ms</td><td><a href="#node-store-057">Inspect store-057</a></td></tr>
+        <tr><th scope="row">store-058</th><td>eu-central-1</td><td>Degraded</td><td>46%</td><td>134 MiB</td><td>1.5 ms</td><td>19.3 ms</td><td><a href="#node-store-058">Inspect store-058</a></td></tr>
+        <tr><th scope="row">store-059</th><td>ap-northeast-1</td><td>Standby</td><td>53%</td><td>165 MiB</td><td>1.8 ms</td><td>20.2 ms</td><td><a href="#node-store-059">Inspect store-059</a></td></tr>
+        <tr><th scope="row">store-060</th><td>us-west-1</td><td>Healthy</td><td>60%</td><td>196 MiB</td><td>2.1 ms</td><td>21.1 ms</td><td><a href="#node-store-060">Inspect store-060</a></td></tr>
+        <tr><th scope="row">store-061</th><td>us-east-1</td><td>Degraded</td><td>67%</td><td>227 MiB</td><td>2.4 ms</td><td>22.0 ms</td><td><a href="#node-store-061">Inspect store-061</a></td></tr>
+        <tr><th scope="row">store-062</th><td>eu-central-1</td><td>Standby</td><td>74%</td><td>258 MiB</td><td>2.7 ms</td><td>22.9 ms</td><td><a href="#node-store-062">Inspect store-062</a></td></tr>
+        <tr><th scope="row">store-063</th><td>ap-northeast-1</td><td>Healthy</td><td>81%</td><td>289 MiB</td><td>3.0 ms</td><td>23.8 ms</td><td><a href="#node-store-063">Inspect store-063</a></td></tr>
+        <tr><th scope="row">store-064</th><td>us-west-1</td><td>Degraded</td><td>88%</td><td>320 MiB</td><td>3.3 ms</td><td>24.7 ms</td><td><a href="#node-store-064">Inspect store-064</a></td></tr>
+        <tr><th scope="row">store-065</th><td>us-east-1</td><td>Standby</td><td>20%</td><td>351 MiB</td><td>3.6 ms</td><td>25.6 ms</td><td><a href="#node-store-065">Inspect store-065</a></td></tr>
+        <tr><th scope="row">store-066</th><td>eu-central-1</td><td>Healthy</td><td>27%</td><td>382 MiB</td><td>3.9 ms</td><td>26.5 ms</td><td><a href="#node-store-066">Inspect store-066</a></td></tr>
+        <tr><th scope="row">store-067</th><td>ap-northeast-1</td><td>Degraded</td><td>34%</td><td>413 MiB</td><td>4.2 ms</td><td>27.4 ms</td><td><a href="#node-store-067">Inspect store-067</a></td></tr>
+        <tr><th scope="row">store-068</th><td>us-west-1</td><td>Standby</td><td>41%</td><td>444 MiB</td><td>4.5 ms</td><td>28.3 ms</td><td><a href="#node-store-068">Inspect store-068</a></td></tr>
+        <tr><th scope="row">store-069</th><td>us-east-1</td><td>Healthy</td><td>48%</td><td>475 MiB</td><td>4.8 ms</td><td>8.5 ms</td><td><a href="#node-store-069">Inspect store-069</a></td></tr>
+        <tr><th scope="row">store-070</th><td>eu-central-1</td><td>Degraded</td><td>55%</td><td>506 MiB</td><td>5.1 ms</td><td>9.4 ms</td><td><a href="#node-store-070">Inspect store-070</a></td></tr>
+        <tr><th scope="row">store-071</th><td>ap-northeast-1</td><td>Standby</td><td>62%</td><td>537 MiB</td><td>5.4 ms</td><td>10.3 ms</td><td><a href="#node-store-071">Inspect store-071</a></td></tr>
+        <tr><th scope="row">store-072</th><td>us-west-1</td><td>Healthy</td><td>69%</td><td>568 MiB</td><td>5.7 ms</td><td>11.2 ms</td><td><a href="#node-store-072">Inspect store-072</a></td></tr>
+        <tr><th scope="row">store-073</th><td>us-east-1</td><td>Degraded</td><td>76%</td><td>599 MiB</td><td>6.0 ms</td><td>12.1 ms</td><td><a href="#node-store-073">Inspect store-073</a></td></tr>
+        <tr><th scope="row">store-074</th><td>eu-central-1</td><td>Standby</td><td>83%</td><td>630 MiB</td><td>6.3 ms</td><td>13.0 ms</td><td><a href="#node-store-074">Inspect store-074</a></td></tr>
+        <tr><th scope="row">store-075</th><td>ap-northeast-1</td><td>Healthy</td><td>15%</td><td>661 MiB</td><td>6.6 ms</td><td>13.9 ms</td><td><a href="#node-store-075">Inspect store-075</a></td></tr>
+        <tr><th scope="row">store-076</th><td>us-west-1</td><td>Degraded</td><td>22%</td><td>692 MiB</td><td>1.2 ms</td><td>14.8 ms</td><td><a href="#node-store-076">Inspect store-076</a></td></tr>
+        <tr><th scope="row">store-077</th><td>us-east-1</td><td>Standby</td><td>29%</td><td>723 MiB</td><td>1.5 ms</td><td>15.7 ms</td><td><a href="#node-store-077">Inspect store-077</a></td></tr>
+        <tr><th scope="row">store-078</th><td>eu-central-1</td><td>Healthy</td><td>36%</td><td>754 MiB</td><td>1.8 ms</td><td>16.6 ms</td><td><a href="#node-store-078">Inspect store-078</a></td></tr>
+        <tr><th scope="row">store-079</th><td>ap-northeast-1</td><td>Degraded</td><td>43%</td><td>785 MiB</td><td>2.1 ms</td><td>17.5 ms</td><td><a href="#node-store-079">Inspect store-079</a></td></tr>
+        <tr><th scope="row">store-080</th><td>us-west-1</td><td>Standby</td><td>50%</td><td>816 MiB</td><td>2.4 ms</td><td>18.4 ms</td><td><a href="#node-store-080">Inspect store-080</a></td></tr>
+        <tr><th scope="row">store-081</th><td>us-east-1</td><td>Healthy</td><td>57%</td><td>847 MiB</td><td>2.7 ms</td><td>19.3 ms</td><td><a href="#node-store-081">Inspect store-081</a></td></tr>
+        <tr><th scope="row">store-082</th><td>eu-central-1</td><td>Degraded</td><td>64%</td><td>878 MiB</td><td>3.0 ms</td><td>20.2 ms</td><td><a href="#node-store-082">Inspect store-082</a></td></tr>
+        <tr><th scope="row">store-083</th><td>ap-northeast-1</td><td>Standby</td><td>71%</td><td>909 MiB</td><td>3.3 ms</td><td>21.1 ms</td><td><a href="#node-store-083">Inspect store-083</a></td></tr>
+        <tr><th scope="row">store-084</th><td>us-west-1</td><td>Healthy</td><td>78%</td><td>940 MiB</td><td>3.6 ms</td><td>22.0 ms</td><td><a href="#node-store-084">Inspect store-084</a></td></tr>
+        <tr><th scope="row">store-085</th><td>us-east-1</td><td>Degraded</td><td>85%</td><td>971 MiB</td><td>3.9 ms</td><td>22.9 ms</td><td><a href="#node-store-085">Inspect store-085</a></td></tr>
+        <tr><th scope="row">store-086</th><td>eu-central-1</td><td>Standby</td><td>17%</td><td>1002 MiB</td><td>4.2 ms</td><td>23.8 ms</td><td><a href="#node-store-086">Inspect store-086</a></td></tr>
+        <tr><th scope="row">store-087</th><td>ap-northeast-1</td><td>Healthy</td><td>24%</td><td>137 MiB</td><td>4.5 ms</td><td>24.7 ms</td><td><a href="#node-store-087">Inspect store-087</a></td></tr>
+        <tr><th scope="row">store-088</th><td>us-west-1</td><td>Degraded</td><td>31%</td><td>168 MiB</td><td>4.8 ms</td><td>25.6 ms</td><td><a href="#node-store-088">Inspect store-088</a></td></tr>
+        <tr><th scope="row">store-089</th><td>us-east-1</td><td>Standby</td><td>38%</td><td>199 MiB</td><td>5.1 ms</td><td>26.5 ms</td><td><a href="#node-store-089">Inspect store-089</a></td></tr>
+        <tr><th scope="row">store-090</th><td>eu-central-1</td><td>Healthy</td><td>45%</td><td>230 MiB</td><td>5.4 ms</td><td>27.4 ms</td><td><a href="#node-store-090">Inspect store-090</a></td></tr>
+        <tr><th scope="row">store-091</th><td>ap-northeast-1</td><td>Degraded</td><td>52%</td><td>261 MiB</td><td>5.7 ms</td><td>28.3 ms</td><td><a href="#node-store-091">Inspect store-091</a></td></tr>
+        <tr><th scope="row">store-092</th><td>us-west-1</td><td>Standby</td><td>59%</td><td>292 MiB</td><td>6.0 ms</td><td>8.5 ms</td><td><a href="#node-store-092">Inspect store-092</a></td></tr>
+        <tr><th scope="row">store-093</th><td>us-east-1</td><td>Healthy</td><td>66%</td><td>323 MiB</td><td>6.3 ms</td><td>9.4 ms</td><td><a href="#node-store-093">Inspect store-093</a></td></tr>
+        <tr><th scope="row">store-094</th><td>eu-central-1</td><td>Degraded</td><td>73%</td><td>354 MiB</td><td>6.6 ms</td><td>10.3 ms</td><td><a href="#node-store-094">Inspect store-094</a></td></tr>
+        <tr><th scope="row">store-095</th><td>ap-northeast-1</td><td>Standby</td><td>80%</td><td>385 MiB</td><td>1.2 ms</td><td>11.2 ms</td><td><a href="#node-store-095">Inspect store-095</a></td></tr>
+        <tr><th scope="row">store-096</th><td>us-west-1</td><td>Healthy</td><td>87%</td><td>416 MiB</td><td>1.5 ms</td><td>12.1 ms</td><td><a href="#node-store-096">Inspect store-096</a></td></tr>
+        <tr><th scope="row">store-097</th><td>us-east-1</td><td>Degraded</td><td>19%</td><td>447 MiB</td><td>1.8 ms</td><td>13.0 ms</td><td><a href="#node-store-097">Inspect store-097</a></td></tr>
+        <tr><th scope="row">store-098</th><td>eu-central-1</td><td>Standby</td><td>26%</td><td>478 MiB</td><td>2.1 ms</td><td>13.9 ms</td><td><a href="#node-store-098">Inspect store-098</a></td></tr>
+        <tr><th scope="row">store-099</th><td>ap-northeast-1</td><td>Healthy</td><td>33%</td><td>509 MiB</td><td>2.4 ms</td><td>14.8 ms</td><td><a href="#node-store-099">Inspect store-099</a></td></tr>
+        <tr><th scope="row">store-100</th><td>us-west-1</td><td>Degraded</td><td>40%</td><td>540 MiB</td><td>2.7 ms</td><td>15.7 ms</td><td><a href="#node-store-100">Inspect store-100</a></td></tr>
+        <tr><th scope="row">store-101</th><td>us-east-1</td><td>Standby</td><td>47%</td><td>571 MiB</td><td>3.0 ms</td><td>16.6 ms</td><td><a href="#node-store-101">Inspect store-101</a></td></tr>
+        <tr><th scope="row">store-102</th><td>eu-central-1</td><td>Healthy</td><td>54%</td><td>602 MiB</td><td>3.3 ms</td><td>17.5 ms</td><td><a href="#node-store-102">Inspect store-102</a></td></tr>
+        <tr><th scope="row">store-103</th><td>ap-northeast-1</td><td>Degraded</td><td>61%</td><td>633 MiB</td><td>3.6 ms</td><td>18.4 ms</td><td><a href="#node-store-103">Inspect store-103</a></td></tr>
+        <tr><th scope="row">store-104</th><td>us-west-1</td><td>Standby</td><td>68%</td><td>664 MiB</td><td>3.9 ms</td><td>19.3 ms</td><td><a href="#node-store-104">Inspect store-104</a></td></tr>
+        <tr><th scope="row">store-105</th><td>us-east-1</td><td>Healthy</td><td>75%</td><td>695 MiB</td><td>4.2 ms</td><td>20.2 ms</td><td><a href="#node-store-105">Inspect store-105</a></td></tr>
+        <tr><th scope="row">store-106</th><td>eu-central-1</td><td>Degraded</td><td>82%</td><td>726 MiB</td><td>4.5 ms</td><td>21.1 ms</td><td><a href="#node-store-106">Inspect store-106</a></td></tr>
+        <tr><th scope="row">store-107</th><td>ap-northeast-1</td><td>Standby</td><td>89%</td><td>757 MiB</td><td>4.8 ms</td><td>22.0 ms</td><td><a href="#node-store-107">Inspect store-107</a></td></tr>
+        <tr><th scope="row">store-108</th><td>us-west-1</td><td>Healthy</td><td>21%</td><td>788 MiB</td><td>5.1 ms</td><td>22.9 ms</td><td><a href="#node-store-108">Inspect store-108</a></td></tr>
+        <tr><th scope="row">store-109</th><td>us-east-1</td><td>Degraded</td><td>28%</td><td>819 MiB</td><td>5.4 ms</td><td>23.8 ms</td><td><a href="#node-store-109">Inspect store-109</a></td></tr>
+        <tr><th scope="row">store-110</th><td>eu-central-1</td><td>Standby</td><td>35%</td><td>850 MiB</td><td>5.7 ms</td><td>24.7 ms</td><td><a href="#node-store-110">Inspect store-110</a></td></tr>
+        <tr><th scope="row">store-111</th><td>ap-northeast-1</td><td>Healthy</td><td>42%</td><td>881 MiB</td><td>6.0 ms</td><td>25.6 ms</td><td><a href="#node-store-111">Inspect store-111</a></td></tr>
+        <tr><th scope="row">store-112</th><td>us-west-1</td><td>Degraded</td><td>49%</td><td>912 MiB</td><td>6.3 ms</td><td>26.5 ms</td><td><a href="#node-store-112">Inspect store-112</a></td></tr>
+        <tr><th scope="row">store-113</th><td>us-east-1</td><td>Standby</td><td>56%</td><td>943 MiB</td><td>6.6 ms</td><td>27.4 ms</td><td><a href="#node-store-113">Inspect store-113</a></td></tr>
+        <tr><th scope="row">store-114</th><td>eu-central-1</td><td>Healthy</td><td>63%</td><td>974 MiB</td><td>1.2 ms</td><td>28.3 ms</td><td><a href="#node-store-114">Inspect store-114</a></td></tr>
+        <tr><th scope="row">store-115</th><td>ap-northeast-1</td><td>Degraded</td><td>70%</td><td>1005 MiB</td><td>1.5 ms</td><td>8.5 ms</td><td><a href="#node-store-115">Inspect store-115</a></td></tr>
+        <tr><th scope="row">store-116</th><td>us-west-1</td><td>Standby</td><td>77%</td><td>140 MiB</td><td>1.8 ms</td><td>9.4 ms</td><td><a href="#node-store-116">Inspect store-116</a></td></tr>
+        <tr><th scope="row">store-117</th><td>us-east-1</td><td>Healthy</td><td>84%</td><td>171 MiB</td><td>2.1 ms</td><td>10.3 ms</td><td><a href="#node-store-117">Inspect store-117</a></td></tr>
+        <tr><th scope="row">store-118</th><td>eu-central-1</td><td>Degraded</td><td>16%</td><td>202 MiB</td><td>2.4 ms</td><td>11.2 ms</td><td><a href="#node-store-118">Inspect store-118</a></td></tr>
+        <tr><th scope="row">store-119</th><td>ap-northeast-1</td><td>Standby</td><td>23%</td><td>233 MiB</td><td>2.7 ms</td><td>12.1 ms</td><td><a href="#node-store-119">Inspect store-119</a></td></tr>
+        <tr><th scope="row">store-120</th><td>us-west-1</td><td>Healthy</td><td>30%</td><td>264 MiB</td><td>3.0 ms</td><td>13.0 ms</td><td><a href="#node-store-120">Inspect store-120</a></td></tr>
+        <tr><th scope="row">store-121</th><td>us-east-1</td><td>Degraded</td><td>37%</td><td>295 MiB</td><td>3.3 ms</td><td>13.9 ms</td><td><a href="#node-store-121">Inspect store-121</a></td></tr>
+        <tr><th scope="row">store-122</th><td>eu-central-1</td><td>Standby</td><td>44%</td><td>326 MiB</td><td>3.6 ms</td><td>14.8 ms</td><td><a href="#node-store-122">Inspect store-122</a></td></tr>
+        <tr><th scope="row">store-123</th><td>ap-northeast-1</td><td>Healthy</td><td>51%</td><td>357 MiB</td><td>3.9 ms</td><td>15.7 ms</td><td><a href="#node-store-123">Inspect store-123</a></td></tr>
+        <tr><th scope="row">store-124</th><td>us-west-1</td><td>Degraded</td><td>58%</td><td>388 MiB</td><td>4.2 ms</td><td>16.6 ms</td><td><a href="#node-store-124">Inspect store-124</a></td></tr>
+        <tr><th scope="row">store-125</th><td>us-east-1</td><td>Standby</td><td>65%</td><td>419 MiB</td><td>4.5 ms</td><td>17.5 ms</td><td><a href="#node-store-125">Inspect store-125</a></td></tr>
+        <tr><th scope="row">store-126</th><td>eu-central-1</td><td>Healthy</td><td>72%</td><td>450 MiB</td><td>4.8 ms</td><td>18.4 ms</td><td><a href="#node-store-126">Inspect store-126</a></td></tr>
+        <tr><th scope="row">store-127</th><td>ap-northeast-1</td><td>Degraded</td><td>79%</td><td>481 MiB</td><td>5.1 ms</td><td>19.3 ms</td><td><a href="#node-store-127">Inspect store-127</a></td></tr>
+        <tr><th scope="row">store-128</th><td>us-west-1</td><td>Standby</td><td>86%</td><td>512 MiB</td><td>5.4 ms</td><td>20.2 ms</td><td><a href="#node-store-128">Inspect store-128</a></td></tr>
+        <tr><th scope="row">store-129</th><td>us-east-1</td><td>Healthy</td><td>18%</td><td>543 MiB</td><td>5.7 ms</td><td>21.1 ms</td><td><a href="#node-store-129">Inspect store-129</a></td></tr>
+        <tr><th scope="row">store-130</th><td>eu-central-1</td><td>Degraded</td><td>25%</td><td>574 MiB</td><td>6.0 ms</td><td>22.0 ms</td><td><a href="#node-store-130">Inspect store-130</a></td></tr>
+        <tr><th scope="row">store-131</th><td>ap-northeast-1</td><td>Standby</td><td>32%</td><td>605 MiB</td><td>6.3 ms</td><td>22.9 ms</td><td><a href="#node-store-131">Inspect store-131</a></td></tr>
+        <tr><th scope="row">store-132</th><td>us-west-1</td><td>Healthy</td><td>39%</td><td>636 MiB</td><td>6.6 ms</td><td>23.8 ms</td><td><a href="#node-store-132">Inspect store-132</a></td></tr>
+        <tr><th scope="row">store-133</th><td>us-east-1</td><td>Degraded</td><td>46%</td><td>667 MiB</td><td>1.2 ms</td><td>24.7 ms</td><td><a href="#node-store-133">Inspect store-133</a></td></tr>
+        <tr><th scope="row">store-134</th><td>eu-central-1</td><td>Standby</td><td>53%</td><td>698 MiB</td><td>1.5 ms</td><td>25.6 ms</td><td><a href="#node-store-134">Inspect store-134</a></td></tr>
+        <tr><th scope="row">store-135</th><td>ap-northeast-1</td><td>Healthy</td><td>60%</td><td>729 MiB</td><td>1.8 ms</td><td>26.5 ms</td><td><a href="#node-store-135">Inspect store-135</a></td></tr>
+        <tr><th scope="row">store-136</th><td>us-west-1</td><td>Degraded</td><td>67%</td><td>760 MiB</td><td>2.1 ms</td><td>27.4 ms</td><td><a href="#node-store-136">Inspect store-136</a></td></tr>
+        <tr><th scope="row">store-137</th><td>us-east-1</td><td>Standby</td><td>74%</td><td>791 MiB</td><td>2.4 ms</td><td>28.3 ms</td><td><a href="#node-store-137">Inspect store-137</a></td></tr>
+        <tr><th scope="row">store-138</th><td>eu-central-1</td><td>Healthy</td><td>81%</td><td>822 MiB</td><td>2.7 ms</td><td>8.5 ms</td><td><a href="#node-store-138">Inspect store-138</a></td></tr>
+        <tr><th scope="row">store-139</th><td>ap-northeast-1</td><td>Degraded</td><td>88%</td><td>853 MiB</td><td>3.0 ms</td><td>9.4 ms</td><td><a href="#node-store-139">Inspect store-139</a></td></tr>
+        <tr><th scope="row">store-140</th><td>us-west-1</td><td>Standby</td><td>20%</td><td>884 MiB</td><td>3.3 ms</td><td>10.3 ms</td><td><a href="#node-store-140">Inspect store-140</a></td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section id="summary" aria-labelledby="summary-heading">
+      <h2 id="summary-heading">Fleet Totals</h2>
+      <p>280 active nodes tracked across 4 geographic regions.</p>
+    </section>
+  </main>
+  <footer>
+    <p>Synthetic large-DOM scaling fixture for clearway benchmarks.</p>
+  </footer>
+</body>
+</html>
