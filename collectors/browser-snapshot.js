@@ -83,6 +83,32 @@
         a: 1,
       });
 
+      /**
+       * Maximum number of cached parsed CSS color strings.
+       * @const {number}
+       */
+      const MAX_COLOR_CACHE_SIZE = 4096;
+
+      /**
+       * Cache mapping raw computed CSS color strings to frozen RGBA objects (or
+       * `null` for unparseable values).
+       * @const {!Map<string, ?{r: number, g: number, b: number, a: number}>}
+       */
+      const COLOR_CACHE = new Map();
+
+      /**
+       * Lazily created 1x1 offscreen 2D canvas context for CSS Color 4/5
+       * fallback parsing (e.g. `lab()`, `lch()`, `color(display-p3 ...)`).
+       * @type {?CanvasRenderingContext2D}
+       */
+      let colorCanvasCtx = null;
+
+      /**
+       * Set to `true` once 2D canvas creation fails so fallback does not retry.
+       * @type {boolean}
+       */
+      let colorCanvasUnavailable = false;
+
       // =======================================================================
       // 2. Color & CSS Parsing Helpers
       // =======================================================================
@@ -118,6 +144,9 @@
         if (rawAlpha === undefined) {
           return 1;
         }
+        if (rawAlpha.toLowerCase() === 'none') {
+          return 0;
+        }
         const parsed = rawAlpha.endsWith('%') ?
           parseFloat(rawAlpha) / 100 :
           parseFloat(rawAlpha);
@@ -125,19 +154,174 @@
       }
 
       /**
-       * Parses a computed CSS color string (`transparent`, `rgb()`, `rgba()`, or
-       * `color(srgb ...)`) into an RGBA object.
-       * @param {?string} value
-       * @return {?{r: number, g: number, b: number, a: number}}
+       * Parses a CSS Color 4 numeric/percentage/`none` channel token.
+       * @param {string} token
+       * @param {number} percentScale Value corresponding to `100%`.
+       * @return {?number}
        */
-      function parseRgba(value) {
-        if (!value) {
+      function parseCssChannel(token, percentScale) {
+        if (token.toLowerCase() === 'none') {
+          return 0;
+        }
+        const match = token.match(
+            /^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(%)?$/i,
+        );
+        if (!match) {
           return null;
         }
-        if (value === 'transparent') {
+        const val = parseFloat(match[1]);
+        if (!Number.isFinite(val)) {
+          return null;
+        }
+        return match[2] === '%' ? (val / 100) * percentScale : val;
+      }
+
+      /**
+       * Parses a CSS Color 4 hue token (`<number>`, `<angle>`, or `none`) into
+       * degrees.
+       * @param {string} token
+       * @return {?number}
+       */
+      function parseHueDegrees(token) {
+        if (token.toLowerCase() === 'none') {
+          return 0;
+        }
+        const match = token.match(
+            /^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(deg|rad|grad|turn)?$/i,
+        );
+        if (!match) {
+          return null;
+        }
+        const val = parseFloat(match[1]);
+        if (!Number.isFinite(val)) {
+          return null;
+        }
+        const unit = (match[2] || 'deg').toLowerCase();
+        if (unit === 'rad') {
+          return (val * 180) / Math.PI;
+        }
+        if (unit === 'grad') {
+          return val * 0.9;
+        }
+        if (unit === 'turn') {
+          return val * 360;
+        }
+        return val;
+      }
+
+      /**
+       * Converts a linear sRGB channel `[0, 1]` to a gamma-encoded 8-bit sRGB
+       * value `[0, 255]`, clamping out-of-gamut values to sRGB bounds.
+       * @param {number} linear
+       * @return {number}
+       */
+      function linearSrgbToByte(linear) {
+        const clamped = clamp(linear, 0, 1);
+        const encoded = clamped <= 0.0031308 ?
+          12.92 * clamped :
+          1.055 * Math.pow(clamped, 1 / 2.4) - 0.055;
+        return clamp(Math.round(encoded * 255), 0, 255);
+      }
+
+      /**
+       * Converts Oklab `(L, a, b)` coordinates and alpha to an sRGBA object.
+       * Uses the CSS Color 4 / Björn Ottosson Oklab-to-linear-sRGB matrices.
+       * @param {number} lCoord
+       * @param {number} aCoord
+       * @param {number} bCoord
+       * @param {number} alpha
+       * @return {{r: number, g: number, b: number, a: number}}
+       */
+      function oklabToRgba(lCoord, aCoord, bCoord, alpha) {
+        const lPrime = lCoord + 0.3963377774 * aCoord + 0.2158037573 * bCoord;
+        const mPrime = lCoord - 0.1055613458 * aCoord - 0.0638541728 * bCoord;
+        const sPrime = lCoord - 0.0894841775 * aCoord - 1.2914855480 * bCoord;
+
+        const lCube = lPrime * lPrime * lPrime;
+        const mCube = mPrime * mPrime * mPrime;
+        const sCube = sPrime * sPrime * sPrime;
+
+        const linR =
+            4.0767416621 * lCube - 3.3077115913 * mCube + 0.2309699292 * sCube;
+        const linG =
+            -1.2684380046 * lCube + 2.6097574011 * mCube - 0.3413193965 * sCube;
+        const linB =
+            -0.0041960863 * lCube - 0.7034186147 * mCube + 1.7076147010 * sCube;
+
+        return {
+          r: linearSrgbToByte(linR),
+          g: linearSrgbToByte(linG),
+          b: linearSrgbToByte(linB),
+          a: alpha,
+        };
+      }
+
+      /**
+       * Resolves any CSS Color 4/5 string supported by the host browser via a
+       * cached 1x1 offscreen `<canvas>` (`lab()`, `lch()`,
+       * `color(display-p3 ...)`, `color-mix()`, `hwb()`, etc.).
+       * @param {string} value
+       * @return {?{r: number, g: number, b: number, a: number}}
+       */
+      function parseColorViaCanvas(value) {
+        if (colorCanvasUnavailable) {
+          return null;
+        }
+        try {
+          if (!colorCanvasCtx) {
+            if (
+              typeof document === 'undefined' ||
+              typeof document.createElement !== 'function'
+            ) {
+              colorCanvasUnavailable = true;
+              return null;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = 1;
+            canvas.height = 1;
+            colorCanvasCtx = canvas.getContext('2d', {willReadFrequently: true});
+            if (!colorCanvasCtx) {
+              colorCanvasUnavailable = true;
+              return null;
+            }
+          }
+          colorCanvasCtx.fillStyle = '#000000';
+          colorCanvasCtx.fillStyle = value;
+          if (colorCanvasCtx.fillStyle === '#000000') {
+            colorCanvasCtx.fillStyle = '#ffffff';
+            colorCanvasCtx.fillStyle = value;
+            if (colorCanvasCtx.fillStyle === '#ffffff') {
+              return null;
+            }
+          }
+          colorCanvasCtx.clearRect(0, 0, 1, 1);
+          colorCanvasCtx.fillRect(0, 0, 1, 1);
+          const data = colorCanvasCtx.getImageData(0, 0, 1, 1).data;
+          return {
+            r: data[0],
+            g: data[1],
+            b: data[2],
+            a: data[3] / 255,
+          };
+        } catch (_err) {
+          return null;
+        }
+      }
+
+      /**
+       * Uncached implementation of `parseRgba`.
+       * @param {string} value
+       * @return {?{r: number, g: number, b: number, a: number}}
+       */
+      function parseRgbaUncached(value) {
+        const trimmed = value.trim();
+        if (!trimmed) {
+          return null;
+        }
+        if (trimmed === 'transparent') {
           return {r: 0, g: 0, b: 0, a: 0};
         }
-        const rgb = value.match(
+        const rgb = trimmed.match(
             /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:\s*[,/]\s*([\d.]+%?))?\s*\)$/i,
         );
         if (rgb) {
@@ -148,18 +332,81 @@
             a: parseAlpha(rgb[4]),
           };
         }
-        const srgb = value.match(
-            /^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)$/i,
+        const srgb = trimmed.match(
+            /^color\(srgb\s+([^\s/]+)\s+([^\s/]+)\s+([^\s/]+)(?:\s*\/\s*([^\s)]+))?\s*\)$/i,
         );
         if (srgb) {
-          return {
-            r: clamp(Math.round(parseFloat(srgb[1]) * 255), 0, 255),
-            g: clamp(Math.round(parseFloat(srgb[2]) * 255), 0, 255),
-            b: clamp(Math.round(parseFloat(srgb[3]) * 255), 0, 255),
-            a: parseAlpha(srgb[4]),
-          };
+          const r = parseCssChannel(srgb[1], 1);
+          const g = parseCssChannel(srgb[2], 1);
+          const b = parseCssChannel(srgb[3], 1);
+          if (r !== null && g !== null && b !== null) {
+            return {
+              r: clamp(Math.round(r * 255), 0, 255),
+              g: clamp(Math.round(g * 255), 0, 255),
+              b: clamp(Math.round(b * 255), 0, 255),
+              a: parseAlpha(srgb[4]),
+            };
+          }
         }
-        return null;
+        const oklch = trimmed.match(
+            /^oklch\(\s*([^\s/]+)\s+([^\s/]+)\s+([^\s/]+)(?:\s*\/\s*([^\s)]+))?\s*\)$/i,
+        );
+        if (oklch) {
+          const lRaw = parseCssChannel(oklch[1], 1);
+          const cRaw = parseCssChannel(oklch[2], 0.4);
+          const hDeg = parseHueDegrees(oklch[3]);
+          if (lRaw !== null && cRaw !== null && hDeg !== null) {
+            const lCoord = clamp(lRaw, 0, 1);
+            const chroma = Math.max(0, cRaw);
+            const rad = (hDeg * Math.PI) / 180;
+            return oklabToRgba(
+                lCoord,
+                chroma * Math.cos(rad),
+                chroma * Math.sin(rad),
+                parseAlpha(oklch[4]),
+            );
+          }
+        }
+        const oklab = trimmed.match(
+            /^oklab\(\s*([^\s/]+)\s+([^\s/]+)\s+([^\s/]+)(?:\s*\/\s*([^\s)]+))?\s*\)$/i,
+        );
+        if (oklab) {
+          const lRaw = parseCssChannel(oklab[1], 1);
+          const aCoord = parseCssChannel(oklab[2], 0.4);
+          const bCoord = parseCssChannel(oklab[3], 0.4);
+          if (lRaw !== null && aCoord !== null && bCoord !== null) {
+            return oklabToRgba(
+                clamp(lRaw, 0, 1),
+                aCoord,
+                bCoord,
+                parseAlpha(oklab[4]),
+            );
+          }
+        }
+        return parseColorViaCanvas(trimmed);
+      }
+
+      /**
+       * Parses a computed CSS color string (`transparent`, `rgb()`, `rgba()`,
+       * `color(srgb ...)`, `oklch()`, `oklab()`, or any CSS Color 4/5 syntax
+       * supported by the browser canvas) into a cached RGBA object.
+       * @param {?string} value
+       * @return {?{r: number, g: number, b: number, a: number}}
+       */
+      function parseRgba(value) {
+        if (!value || typeof value !== 'string') {
+          return null;
+        }
+        if (COLOR_CACHE.has(value)) {
+          return COLOR_CACHE.get(value);
+        }
+        const parsed = parseRgbaUncached(value);
+        const cached = parsed ? Object.freeze(parsed) : null;
+        if (COLOR_CACHE.size >= MAX_COLOR_CACHE_SIZE) {
+          COLOR_CACHE.clear();
+        }
+        COLOR_CACHE.set(value, cached);
+        return cached;
       }
 
       /**
@@ -250,7 +497,7 @@
           };
         }
         const matches = bgImage.match(
-            /rgba?\([^)]+\)|color\(srgb\s+[^)]+\)/gi,
+            /rgba?\([^)]+\)|(?:oklab|oklch|lab|lch|hwb|hsla?|color)\([^)]+\)/gi,
         );
         const stops = [];
         if (matches) {
@@ -1172,6 +1419,6 @@
         return result;
       }
 
-      return {collectClearwayDocument};
+      return {collectClearwayDocument, parseRgba, parseBackgroundImage};
     },
 );
