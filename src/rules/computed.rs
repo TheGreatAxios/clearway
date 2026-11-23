@@ -927,6 +927,7 @@ struct SegmentWalkState {
     in_target_segment: bool,
     found_target: bool,
     segment_non_link_text: String,
+    segment_link_chars: usize,
 }
 
 fn walk_prose_segment(
@@ -958,6 +959,7 @@ fn walk_prose_segment(
                     return;
                 }
                 state.segment_non_link_text.clear();
+                state.segment_link_chars = 0;
             }
         }
         return;
@@ -968,6 +970,9 @@ fn walk_prose_segment(
     if !is_root {
         if nid == target_link_id {
             state.in_target_segment = true;
+            state.segment_link_chars += normalize_whitespace(&collect_raw_text(doc, nid))
+                .chars()
+                .count();
             return;
         }
         if !doc.is_in_accessibility_tree(nid) {
@@ -979,11 +984,16 @@ fn walk_prose_segment(
                 return;
             }
             state.segment_non_link_text.clear();
+            state.segment_link_chars = 0;
             return;
         }
-        let is_other_link =
-            (node.tag == "a" && node.has_attr("href")) || effective_role(doc, node) == Some("link");
-        if is_other_link {
+        let is_other_link_or_widget = (node.tag == "a" && node.has_attr("href"))
+            || effective_role(doc, node) == Some("link")
+            || is_interactive_control(doc, node);
+        if is_other_link_or_widget {
+            state.segment_link_chars += normalize_whitespace(&collect_raw_text(doc, nid))
+                .chars()
+                .count();
             return;
         }
     }
@@ -1000,6 +1010,12 @@ fn link_is_in_prose_text_block(doc: &Document, block_id: NodeId, link_id: NodeId
     let mut state = SegmentWalkState::default();
     walk_prose_segment(doc, block_id, link_id, true, &mut visited, &mut state);
     if !state.in_target_segment {
+        return false;
+    }
+    let non_link_len = normalize_whitespace(&state.segment_non_link_text)
+        .chars()
+        .count();
+    if non_link_len <= state.segment_link_chars {
         return false;
     }
     let stripped: String = state
@@ -1141,6 +1157,9 @@ impl Rule for LinkInTextBlock {
             let Some(parent_fg) = effective_foreground(doc, text_block_id, bg) else {
                 continue;
             };
+            if link_fg == parent_fg {
+                continue;
+            }
             let ratio = contrast_ratio(link_fg, parent_fg);
             if ratio + 0.005 < LINK_IN_TEXT_MIN_CONTRAST {
                 out.push(Violation::with_detail(
@@ -1733,5 +1752,120 @@ impl Rule for TargetSize {
                 ));
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::html::parse_html;
+
+    fn run_link_in_text_block(doc: &Document) -> Vec<Violation> {
+        let mut out = Vec::new();
+        LinkInTextBlock.run(doc, &mut out);
+        out
+    }
+
+    #[test]
+    fn link_in_text_block_skips_identical_foreground_color() {
+        let mut doc = parse_html(
+            r#"<!doctype html><html lang="en"><head><title>T</title></head><body>
+               <p id="p">Read our updated <a id="same" href="/privacy">Privacy Notices</a> for complete policy details.</p>
+               </body></html>"#,
+        );
+        let white = Rgba::opaque(255, 255, 255);
+        let dark_bg = Rgba::opaque(20, 20, 20);
+        for node in &mut doc.nodes {
+            match node.id_attr() {
+                Some("p") => {
+                    node.computed = Some(ComputedStyle {
+                        color: Some(white),
+                        background_color: Some(dark_bg),
+                        display: Some("block".to_owned()),
+                        ..ComputedStyle::default()
+                    });
+                }
+                Some("same") => {
+                    node.computed = Some(ComputedStyle {
+                        color: Some(white),
+                        display: Some("inline".to_owned()),
+                        text_decoration_line: Some("none".to_owned()),
+                        ..ComputedStyle::default()
+                    });
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(run_link_in_text_block(&doc).len(), 0);
+    }
+
+    #[test]
+    fn link_in_text_block_flags_distinct_hue_near_one_to_one_luminance() {
+        let mut doc = parse_html(
+            r#"<!doctype html><html lang="en"><head><title>T</title></head><body>
+               <p id="p">Specialized care is available through the <a id="hue" href="/unit">Regional Care Unit</a> downtown.</p>
+               </body></html>"#,
+        );
+        let parent_fg = Rgba::opaque(0x3b, 0x37, 0x33);
+        let link_fg = Rgba::opaque(0x03, 0x3f, 0x33);
+        let bg = Rgba::opaque(244, 241, 237);
+        for node in &mut doc.nodes {
+            match node.id_attr() {
+                Some("p") => {
+                    node.computed = Some(ComputedStyle {
+                        color: Some(parent_fg),
+                        background_color: Some(bg),
+                        display: Some("block".to_owned()),
+                        ..ComputedStyle::default()
+                    });
+                }
+                Some("hue") => {
+                    node.computed = Some(ComputedStyle {
+                        color: Some(link_fg),
+                        display: Some("inline".to_owned()),
+                        text_decoration_line: Some("none".to_owned()),
+                        ..ComputedStyle::default()
+                    });
+                }
+                _ => {}
+            }
+        }
+        let fails = run_link_in_text_block(&doc);
+        assert_eq!(fails.len(), 1);
+        assert_eq!(fails[0].selector, "#hue");
+    }
+
+    #[test]
+    fn link_in_text_block_skips_footer_credit_where_link_text_exceeds_non_link_text() {
+        let mut doc = parse_html(
+            r#"<!doctype html><html lang="en"><head><title>T</title></head><body>
+               <div id="credit"><span>Website Designed by <a id="a1" href="/a">Creative Design Group</a> | <a id="a2" href="/b">Smart Marketing</a></span></div>
+               </body></html>"#,
+        );
+        let parent_fg = Rgba::opaque(51, 51, 51);
+        let link_fg = Rgba::opaque(0, 51, 204);
+        let bg = Rgba::opaque(255, 255, 255);
+        for node in &mut doc.nodes {
+            match node.id_attr() {
+                Some("credit") => {
+                    node.computed = Some(ComputedStyle {
+                        color: Some(parent_fg),
+                        background_color: Some(bg),
+                        display: Some("block".to_owned()),
+                        ..ComputedStyle::default()
+                    });
+                }
+                Some("a1" | "a2") => {
+                    node.computed = Some(ComputedStyle {
+                        color: Some(link_fg),
+                        display: Some("inline".to_owned()),
+                        text_decoration_line: Some("none".to_owned()),
+                        ..ComputedStyle::default()
+                    });
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(run_link_in_text_block(&doc).len(), 0);
     }
 }

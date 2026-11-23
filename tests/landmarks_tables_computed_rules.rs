@@ -464,7 +464,7 @@ fn computed_style_and_layout_rules_pass_and_fail() {
 
     // 23. link-in-text-block
     let mut link_doc = parse_html(&page(
-        "<p id=\"pb\">Read <a id=\"bad-link\" href=\"/a\">bad link</a> and <a id=\"ul-link\" href=\"/b\">underlined</a> and <a id=\"hc-link\" href=\"/c\">high contrast</a>.</p>",
+        "<p id=\"pb\">Read our complete guide covering <a id=\"bad-link\" href=\"/a\">bad link</a> and <a id=\"ul-link\" href=\"/b\">underlined</a> and <a id=\"hc-link\" href=\"/c\">high contrast</a> examples.</p>",
     ));
     for node in &mut link_doc.nodes {
         match node.id_attr() {
@@ -886,7 +886,7 @@ fn region_collapses_to_highest_non_landmark_ancestor() {
 #[test]
 fn link_in_text_block_non_color_distinctions_and_punctuation_separators() {
     let mut doc = parse_html(&page(
-        r#"<p id="prose">Read <a id="bb" href="/1">bordered</a>, <a id="bs" href="/2">shadowed</a>, <a id="bold" href="/3">bold</a>, and <a id="plain" href="/4">plain</a>.</p>
+        r#"<p id="prose">Read our detailed overview covering <a id="bb" href="/1">bordered</a>, <a id="bs" href="/2">shadowed</a>, <a id="bold" href="/3">bold</a>, and <a id="plain" href="/4">plain</a> links.</p>
            <p id="crumbs"><a id="c1" href="/a">Home</a> / <a id="c2" href="/b">Docs</a> | <a id="c3" href="/c">API</a></p>"#,
     ));
     for node in &mut doc.nodes {
