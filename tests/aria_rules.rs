@@ -181,14 +181,33 @@ fn aria_braille_conditional_deprecated_hidden_body_pass_and_fail() {
 
 #[test]
 fn aria_prohibited_children_parent_pass_and_fail() {
-    // 16. aria-prohibited-attr
+    // 16. aria-prohibited-attr: explicit role="presentation" is a hard violation;
+    // generic/native non-widget naming without explicit role routes to `incomplete`;
+    // aria-hidden="true" elements are skipped.
     let prohibited = page(
         r#"<div aria-label="Generic label">Text</div>
            <p aria-label="Paragraph label">Text</p>
            <span role="presentation" aria-label="Presentational label">Text</span>
+           <div aria-hidden="true" aria-label="Hidden generic">Text</div>
            <div role="region" aria-label="Landmark label">Text</div>"#,
     );
-    assert_eq!(violations(&prohibited, "aria-prohibited-attr").len(), 3);
+    let prohib_report = audit_html(&prohibited, &AuditOptions::default());
+    assert_eq!(
+        prohib_report
+            .violations
+            .iter()
+            .filter(|v| v.rule_id == "aria-prohibited-attr")
+            .count(),
+        1
+    );
+    assert_eq!(
+        prohib_report
+            .incomplete
+            .iter()
+            .filter(|v| v.rule_id == "aria-prohibited-attr")
+            .count(),
+        2
+    );
 
     // 17. aria-required-children (including aria-owns & aria-busy="true")
     let req_children = page(
@@ -280,12 +299,35 @@ fn html_aam_aria_precision_and_violation_attribution() {
     );
     assert_eq!(violations(&cond, "aria-conditional-attr").len(), 2);
 
-    // HTML-AAM prohibited naming on no-role elements vs name-contributing span inside button.
+    // HTML-AAM prohibited naming on no-role elements (incomplete) vs name-contributing span inside button (pass).
     let prohib = page(
         r#"<cite aria-label="Author">Name</cite>
            <div role="button"><span aria-label="Save"></span></div>"#,
     );
-    assert_eq!(violations(&prohib, "aria-prohibited-attr").len(), 1);
+    let prohib_rep = audit_html(&prohib, &AuditOptions::default());
+    assert_eq!(
+        prohib_rep
+            .violations
+            .iter()
+            .filter(|v| v.rule_id == "aria-prohibited-attr")
+            .count(),
+        0
+    );
+    assert_eq!(
+        prohib_rep
+            .incomplete
+            .iter()
+            .filter(|v| v.rule_id == "aria-prohibited-attr")
+            .count(),
+        1
+    );
+
+    // Cross-document duplicate-id-aria: same ID in parent doc and flattened iframe does not collide.
+    let cross_doc = page(
+        r#"<label for="shared">Outer</label><input id="shared" type="text">
+           <iframe title="Widget"><label for="shared">Inner</label><input id="shared" type="text"></iframe>"#,
+    );
+    assert_eq!(violations(&cross_doc, "duplicate-id-aria").len(), 0);
 
     // First-element attribution on landmark-unique and <label> naming on <button>.
     let attr_doc = page(

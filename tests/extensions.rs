@@ -167,7 +167,27 @@ fn focus_outline_none_pass_and_fail() {
     let bad = "<!doctype html><html lang=\"en\"><head><title>T</title><style>a:focus { outline: none; }</style></head><body><a href=\"/\">Home</a></body></html>";
     let good_replacement = "<!doctype html><html lang=\"en\"><head><title>T</title><style>a:focus { outline: 0; box-shadow: 0 0 0 2px blue; }</style></head><body><a href=\"/\">Home</a></body></html>";
     let good_focus_visible = "<!doctype html><html lang=\"en\"><head><title>T</title><style>a:focus-visible { outline: none; }</style></head><body><a href=\"/\">Home</a></body></html>";
+    let good_not_focus_visible = "<!doctype html><html lang=\"en\"><head><title>T</title><style>a:focus:not(:focus-visible) { outline: none; }</style></head><body><a href=\"/\">Home</a></body></html>";
 
+    // Default run routes static heuristic focus-outline-none hits to incomplete (`needs_review`).
+    let default_report = audit_html(bad, &AuditOptions::default());
+    assert_eq!(
+        default_report
+            .violations
+            .iter()
+            .filter(|v| v.rule_id == "focus-outline-none")
+            .count(),
+        0
+    );
+    assert_eq!(
+        default_report
+            .incomplete
+            .iter()
+            .filter(|v| v.rule_id == "focus-outline-none")
+            .count(),
+        1
+    );
+    // Explicit Error override still promotes it to a hard violation.
     assert_eq!(html_rule_violations(bad, "focus-outline-none"), 1);
     assert_eq!(
         html_rule_violations(good_replacement, "focus-outline-none"),
@@ -175,6 +195,10 @@ fn focus_outline_none_pass_and_fail() {
     );
     assert_eq!(
         html_rule_violations(good_focus_visible, "focus-outline-none"),
+        0
+    );
+    assert_eq!(
+        html_rule_violations(good_not_focus_visible, "focus-outline-none"),
         0
     );
 }

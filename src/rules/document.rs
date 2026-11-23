@@ -927,6 +927,7 @@ enum ResolvedSpacing {
 enum ParsedSpacing {
     Value(ResolvedSpacing),
     Inherit,
+    Reset,
 }
 
 #[derive(Default)]
@@ -1123,6 +1124,9 @@ fn apply_inline_spacing(
                     });
                 }
                 ParsedSpacing::Inherit => {}
+                ParsedSpacing::Reset => {
+                    *eff = None;
+                }
             }
         } else if let Some(p) = norm {
             match p {
@@ -1134,6 +1138,9 @@ fn apply_inline_spacing(
                     });
                 }
                 ParsedSpacing::Inherit => {}
+                ParsedSpacing::Reset => {
+                    *eff = None;
+                }
             }
         }
     };
@@ -1200,8 +1207,8 @@ fn parse_spacing_value(prop: &str, raw: &str, font_size_px: f64) -> Option<Parse
         return None;
     }
     match s.as_str() {
-        "inherit" | "unset" | "revert" => return Some(ParsedSpacing::Inherit),
-        "normal" | "initial" => return Some(ParsedSpacing::Value(ResolvedSpacing::Ratio(0.0))),
+        "inherit" | "unset" | "revert" | "revert-layer" => return Some(ParsedSpacing::Inherit),
+        "initial" | "normal" | "auto" => return Some(ParsedSpacing::Reset),
         _ => {}
     }
     if let Ok(n) = s.parse::<f64>()

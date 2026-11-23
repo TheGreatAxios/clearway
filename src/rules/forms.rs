@@ -384,7 +384,7 @@ impl FormFieldMultipleLabels {
             "RGAA-11.2.1",
         ],
         enabled_by_default: true,
-        needs_review: false,
+        needs_review: true,
         help: "Form field must not have multiple label elements",
         description: "Associate each form control with at most one <label> element.",
         docs_url: "https://www.w3.org/WAI/WCAG21/Understanding/labels-or-instructions.html",
@@ -447,7 +447,11 @@ impl Rule for LabelContentNameMismatch {
     fn run(&self, doc: &Document, out: &mut Vec<Violation>) {
         let style_hints = LabelStyleHints::from_doc(doc);
         for el in doc.elements() {
-            if !doc.is_in_accessibility_tree(el.id) {
+            if el.tag == "select"
+                || !doc.is_in_accessibility_tree(el.id)
+                || crate::rules::computed::is_visually_hidden(doc, el.id)
+                || style_hints.is_visually_hidden(el)
+            {
                 continue;
             }
             if !el.has_attr("aria-label") && !el.has_attr("aria-labelledby") {

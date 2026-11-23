@@ -750,9 +750,18 @@ fn background_image_contrast_routing_and_opaque_card_occlusion() {
                     ..ComputedStyle::default()
                 });
             }
-            Some("hero-caption" | "card-text") => {
+            Some("hero-caption") => {
                 node.computed = Some(ComputedStyle {
                     color: Some(Rgba::opaque(255, 255, 255)),
+                    background_color: Some(Rgba::new(0, 0, 0, 0.0)),
+                    font_size_px: Some(16.0),
+                    font_weight: Some(400),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("card-text") => {
+                node.computed = Some(ComputedStyle {
+                    color: Some(Rgba::opaque(180, 180, 180)),
                     background_color: Some(Rgba::new(0, 0, 0, 0.0)),
                     font_size_px: Some(16.0),
                     font_weight: Some(400),
@@ -943,7 +952,7 @@ fn visually_hidden_opacity_zero_and_sr_only_skipped_by_visual_rules() {
            <span id="clipped-text">Search</span>
            <p id="visible-low">Low contrast</p>"#,
     ));
-    let low_fg = Rgba::opaque(255, 255, 255);
+    let low_fg = Rgba::opaque(180, 180, 180);
     let white_bg = Rgba::opaque(255, 255, 255);
     for node in &mut doc.nodes {
         match node.id_attr() {
@@ -1026,4 +1035,163 @@ fn visually_hidden_opacity_zero_and_sr_only_skipped_by_visual_rules() {
     );
     assert_eq!(doc_violations(&doc, "link-in-text-block", false).len(), 0);
     assert_eq!(doc_violations(&doc, "target-size", false).len(), 0);
+}
+
+#[test]
+fn precision_audit_contrast_and_scroll_regressions() {
+    let mut doc = parse_html(&page(
+        r#"<p id="trans-fg">Transparent text</p>
+           <div id="zero-clip"><span id="zero-clip-txt">Clipped zero width</span></div>
+           <select aria-label="State"><option id="opt-el">Arkansas</option></select>
+           <span id="emoji-bulb">💡</span>
+           <span id="bmp-star">★</span>
+           <p id="equal-ratio">White over sibling hero</p>
+           <div id="zero-scroll">Off-screen drawer content</div>"#,
+    ));
+
+    let white = Rgba::opaque(255, 255, 255);
+    let low_gray = Rgba::opaque(180, 180, 180);
+
+    for node in &mut doc.nodes {
+        match node.id_attr() {
+            Some("trans-fg") => {
+                node.computed = Some(ComputedStyle {
+                    color: Some(Rgba::new(2, 1, 1, 0.0)),
+                    background_color: Some(white),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("zero-clip") => {
+                node.rect = Some(Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 0.0,
+                    height: 20.0,
+                });
+                node.computed = Some(ComputedStyle {
+                    overflow_x: Some("hidden".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("zero-clip-txt" | "opt-el" | "emoji-bulb" | "bmp-star") => {
+                node.computed = Some(ComputedStyle {
+                    color: Some(low_gray),
+                    background_color: Some(white),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("equal-ratio") => {
+                node.computed = Some(ComputedStyle {
+                    color: Some(white),
+                    background_color: Some(white),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("zero-scroll") => {
+                node.rect = Some(Rect {
+                    x: -300.0,
+                    y: 0.0,
+                    width: 0.0,
+                    height: 400.0,
+                });
+                node.computed = Some(ComputedStyle {
+                    overflow_y: Some("auto".to_owned()),
+                    scroll_height: Some(600.0),
+                    client_height: Some(400.0),
+                    ..ComputedStyle::default()
+                });
+            }
+            _ => {}
+        }
+    }
+
+    let cc_fails: Vec<String> = doc_violations(&doc, "color-contrast", false)
+        .into_iter()
+        .map(|v| v.selector)
+        .collect();
+    assert_eq!(cc_fails, vec!["#bmp-star"]);
+    let cc_inc: Vec<String> = doc_incomplete(&doc, "color-contrast", false)
+        .into_iter()
+        .map(|v| v.selector)
+        .collect();
+    assert_eq!(cc_inc, vec!["#equal-ratio"]);
+    assert_eq!(
+        doc_violations(&doc, "scrollable-region-focusable", false).len(),
+        0
+    );
+}
+
+#[test]
+fn precision_audit_link_in_text_block_regressions() {
+    let mut doc = parse_html(&page(
+        r#"<p id="footer-bar">© 2026 Company | <a id="footer-privacy" href="/p">Privacy Policy</a> | <a id="footer-sitemap" href="/s">Sitemap</a></p>
+           <p id="or-bar"><a id="or-a" href="/a">Browse by State</a> or <a id="or-b" href="/b">View Arkansas</a></p>
+           <p id="br-block"><a id="br-link" href="/careers"><strong id="br-strong">Careers</strong></a><br>Explore open roles.</p>
+           <p id="prose-semi">Read about <a id="semi-link" href="/semi">semibold links</a> in prose.</p>
+           <p id="prose-bold">Bold paragraph with <a id="normal-in-bold" href="/nb">normal link</a> inside.</p>
+           <p id="prose-bad">Regular paragraph with <a id="true-bad-link" href="/bad">low contrast link</a> inside.</p>"#,
+    ));
+
+    let white = Rgba::opaque(255, 255, 255);
+    let dark = Rgba::opaque(34, 34, 34);
+    let low_diff_blue = Rgba::opaque(0, 51, 204);
+
+    for node in &mut doc.nodes {
+        match node.id_attr() {
+            Some("footer-bar" | "or-bar" | "br-block" | "prose-semi" | "prose-bad") => {
+                node.computed = Some(ComputedStyle {
+                    color: Some(dark),
+                    background_color: Some(white),
+                    font_weight: Some(400),
+                    display: Some("block".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("prose-bold") => {
+                node.computed = Some(ComputedStyle {
+                    color: Some(dark),
+                    background_color: Some(white),
+                    font_weight: Some(700),
+                    display: Some("block".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some(
+                "footer-privacy" | "footer-sitemap" | "or-a" | "or-b" | "br-link"
+                | "normal-in-bold" | "true-bad-link",
+            ) => {
+                node.computed = Some(ComputedStyle {
+                    color: Some(low_diff_blue),
+                    font_weight: Some(400),
+                    display: Some("inline".to_owned()),
+                    text_decoration_line: Some("none".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("br-strong") => {
+                node.computed = Some(ComputedStyle {
+                    color: Some(low_diff_blue),
+                    font_weight: Some(700),
+                    display: Some("inline".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("semi-link") => {
+                node.computed = Some(ComputedStyle {
+                    color: Some(low_diff_blue),
+                    font_weight: Some(600),
+                    display: Some("inline".to_owned()),
+                    text_decoration_line: Some("none".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            _ => {}
+        }
+    }
+
+    let litb_fails: Vec<String> = doc_violations(&doc, "link-in-text-block", false)
+        .into_iter()
+        .map(|v| v.selector)
+        .collect();
+    assert_eq!(litb_fails, vec!["#true-bad-link"]);
 }

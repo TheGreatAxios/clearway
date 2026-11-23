@@ -110,7 +110,7 @@ impl FocusOutlineNone {
         wcag: "2.4.7 (AA)",
         tags: &["cat.keyboard", "wcag2aa", "wcag247", "clearway"],
         enabled_by_default: true,
-        needs_review: false,
+        needs_review: true,
         help: "Focus styles must not remove outlines without a visible replacement",
         description: "Ensure :focus CSS rules that set outline: none or outline: 0 provide an alternative focus indicator such as box-shadow, border, or background.",
         docs_url: "https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html",
@@ -135,7 +135,7 @@ fn strip_css_comments(css: &str) -> String {
 }
 
 /// Returns `true` if `selector_list` contains a `:focus` pseudo-class that is
-/// not `:focus-visible` or `:focus-within`.
+/// not `:focus-visible`, `:focus-within`, or `:focus:not(:focus-visible)`.
 fn selector_has_plain_focus(selector_list: &str) -> bool {
     let lower = selector_list.to_ascii_lowercase();
     let mut rest = lower.as_str();
@@ -146,7 +146,14 @@ fn selector_has_plain_focus(selector_list: &str) -> bool {
             .first()
             .is_some_and(|&b| b == b'-' || b == b'_' || b.is_ascii_alphanumeric());
         if !next_is_ident {
-            return true;
+            let is_not_focus_visible = after
+                .trim_start()
+                .strip_prefix(":not(")
+                .and_then(|inner| inner.split_once(')'))
+                .is_some_and(|(arg, _)| arg.trim() == ":focus-visible");
+            if !is_not_focus_visible {
+                return true;
+            }
         }
         rest = after;
     }
@@ -544,7 +551,8 @@ impl Rule for ApcaContrast {
     fn run(&self, doc: &Document, out: &mut Vec<Violation>) {
         let meta = self.meta();
         for el in doc.elements() {
-            if !doc.is_in_accessibility_tree(el.id)
+            if el.tag == "option"
+                || !doc.is_in_accessibility_tree(el.id)
                 || !doc.has_direct_text(el.id)
                 || is_visually_hidden(doc, el.id)
                 || is_inactive_ui_control_or_label(doc, el.id)
@@ -555,7 +563,7 @@ impl Rule for ApcaContrast {
             let Some(computed) = &el.computed else {
                 continue;
             };
-            if computed.color.is_none() {
+            if computed.color.is_none_or(|c| c.a <= 0.0) {
                 continue;
             }
             let bg = effective_background(doc, el.id);

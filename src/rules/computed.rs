@@ -192,13 +192,28 @@ pub(crate) fn is_inactive_ui_control_or_label(doc: &Document, id: NodeId) -> boo
     is_only_labelling_disabled_controls(doc, id)
 }
 
+fn is_color_emoji_char(c: char) -> bool {
+    matches!(c, '\u{1F300}'..='\u{1FAFF}' | '\u{1F000}'..='\u{1F02F}')
+}
+
 /// WCAG 1.4.3 / 1.4.6 non-text UI icon glyph exemption:
-/// When an element has an explicit `aria-label` or `aria-labelledby` whose computed
-/// accessible name differs from its single-character visible text (e.g. `"X"`, `"+"`,
-/// `"×"`, `"?"`, `"-"` used as an icon glyph), WCAG treats the glyph as non-text UI
-/// iconography (WCAG 1.4.11 3:1) rather than human-language text (4.5:1 / 7:1).
+/// 1. Full-color Unicode emoji glyphs (e.g. `💡`, U+1F300..=U+1FAFF and U+1F000..=U+1F02F)
+///    are rendered with multi-color bitmap/COLR palettes unaffected by CSS `color`
+///    (while monochrome BMP symbols like `★`/`☆` U+2605/U+2606 are still checked).
+/// 2. When an element has an explicit `aria-label` or `aria-labelledby` whose computed
+///    accessible name differs from its single-character visible text (e.g. `"X"`, `"+"`,
+///    `"×"`, `"?"`, `"-"` used as an icon glyph), WCAG treats the glyph as non-text UI
+///    iconography (WCAG 1.4.11 3:1) rather than human-language text (4.5:1 / 7:1).
 pub(crate) fn is_non_text_icon_glyph(doc: &Document, node: &Node) -> bool {
     let visible = normalize_whitespace(&collect_raw_text(doc, node.id));
+    if !visible.is_empty()
+        && visible
+            .chars()
+            .all(|c| is_color_emoji_char(c) || matches!(c, '\u{FE0E}' | '\u{FE0F}' | '\u{200D}'))
+        && visible.chars().any(is_color_emoji_char)
+    {
+        return true;
+    }
     let mut chars = visible.chars();
     let Some(first) = chars.next() else {
         return false;
@@ -305,10 +320,11 @@ pub(crate) fn is_visually_hidden(doc: &Document, id: NodeId) -> bool {
             return true;
         }
         if let Some(rect) = node.rect
-            && rect.width <= 1.5
-            && rect.height <= 1.5
             && (is_hidden_overflow(computed.overflow_x.as_deref())
                 || is_hidden_overflow(computed.overflow_y.as_deref()))
+            && ((rect.width <= 1.5 && rect.height <= 1.5)
+                || rect.width <= 0.0
+                || rect.height <= 0.0)
         {
             return true;
         }
@@ -325,7 +341,8 @@ fn evaluate_contrast(
     out: &mut Vec<Violation>,
 ) {
     for el in doc.elements() {
-        if !doc.is_in_accessibility_tree(el.id)
+        if el.tag == "option"
+            || !doc.is_in_accessibility_tree(el.id)
             || !doc.has_direct_text(el.id)
             || is_visually_hidden(doc, el.id)
             || is_inactive_ui_control_or_label(doc, el.id)
@@ -336,7 +353,7 @@ fn evaluate_contrast(
         let Some(computed) = &el.computed else {
             continue;
         };
-        if computed.color.is_none() {
+        if computed.color.is_none_or(|c| c.a <= 0.0) {
             continue;
         }
         let bg = effective_background(doc, el.id);
@@ -415,12 +432,14 @@ fn evaluate_contrast(
         let ratio = contrast_ratio(fg, bg);
         if ratio + 0.005 < threshold {
             let bg_image = has_effective_background_image(doc, el.id);
-            let v = if computed.has_text_shadow || bg_image {
-                let reason = match (computed.has_text_shadow, bg_image) {
-                    (true, true) => "text-shadow and background-image present",
-                    (true, false) => "text-shadow present",
-                    (false, true) => "background-image present",
-                    (false, false) => unreachable!(),
+            let equal_ratio = ratio <= 1.005;
+            let v = if computed.has_text_shadow || bg_image || equal_ratio {
+                let reason = match (computed.has_text_shadow, bg_image, equal_ratio) {
+                    (true, true, _) => "text-shadow and background-image present",
+                    (true, false, _) => "text-shadow present",
+                    (false, true, _) => "background-image present",
+                    (false, false, true) => "foreground and background colors are equal (1:1)",
+                    (false, false, false) => unreachable!(),
                 };
                 Violation::with_detail(
                     meta,
@@ -892,6 +911,181 @@ fn is_italic_style(style: Option<&str>) -> bool {
     })
 }
 
+fn is_separator_punct(c: char) -> bool {
+    matches!(
+        c,
+        '|' | '•' | '·' | '/' | '-' | '—' | '–' | '©' | ',' | '.' | ':' | ';'
+    )
+}
+
+fn is_segment_divider_char(c: char) -> bool {
+    matches!(c, '|' | '•' | '·')
+}
+
+#[derive(Default)]
+struct SegmentWalkState {
+    in_target_segment: bool,
+    found_target: bool,
+    segment_non_link_text: String,
+}
+
+fn walk_prose_segment(
+    doc: &Document,
+    nid: NodeId,
+    target_link_id: NodeId,
+    is_root: bool,
+    visited: &mut HashSet<NodeId>,
+    state: &mut SegmentWalkState,
+) {
+    if !visited.insert(nid) {
+        return;
+    }
+    let Some(node) = doc.node(nid) else {
+        return;
+    };
+    if node.is_text() {
+        for part in node.text.split_inclusive(is_segment_divider_char) {
+            let has_divider = part.chars().last().is_some_and(is_segment_divider_char);
+            let clean = if has_divider {
+                part.trim_end_matches(is_segment_divider_char)
+            } else {
+                part
+            };
+            state.segment_non_link_text.push_str(clean);
+            if has_divider {
+                if state.in_target_segment {
+                    state.found_target = true;
+                    return;
+                }
+                state.segment_non_link_text.clear();
+            }
+        }
+        return;
+    }
+    if !node.is_element() {
+        return;
+    }
+    if !is_root {
+        if nid == target_link_id {
+            state.in_target_segment = true;
+            return;
+        }
+        if !doc.is_in_accessibility_tree(nid) {
+            return;
+        }
+        if node.tag == "br" || is_block_container_element(node) {
+            if state.in_target_segment {
+                state.found_target = true;
+                return;
+            }
+            state.segment_non_link_text.clear();
+            return;
+        }
+        let is_other_link =
+            (node.tag == "a" && node.has_attr("href")) || effective_role(doc, node) == Some("link");
+        if is_other_link {
+            return;
+        }
+    }
+    for &cid in &node.children {
+        walk_prose_segment(doc, cid, target_link_id, false, visited, state);
+        if state.found_target {
+            return;
+        }
+    }
+}
+
+fn link_is_in_prose_text_block(doc: &Document, block_id: NodeId, link_id: NodeId) -> bool {
+    let mut visited = HashSet::new();
+    let mut state = SegmentWalkState::default();
+    walk_prose_segment(doc, block_id, link_id, true, &mut visited, &mut state);
+    if !state.in_target_segment {
+        return false;
+    }
+    let stripped: String = state
+        .segment_non_link_text
+        .chars()
+        .map(|c| if is_separator_punct(c) { ' ' } else { c })
+        .collect();
+    let mut words = 0usize;
+    let mut alnum_chars = 0usize;
+    for word in stripped.split_whitespace() {
+        let count = word.chars().filter(|c| c.is_alphanumeric()).count();
+        if count > 0 {
+            words += 1;
+            alnum_chars += count;
+        }
+    }
+    words >= 2 || alnum_chars >= 6
+}
+
+fn computed_has_link_style_cue(
+    link_computed: &ComputedStyle,
+    parent_computed: &ComputedStyle,
+) -> bool {
+    if link_computed
+        .text_decoration_line
+        .as_deref()
+        .is_some_and(|d| {
+            let lower = d.to_ascii_lowercase();
+            lower.contains("underline")
+                || lower.contains("overline")
+                || lower.contains("line-through")
+        })
+        || link_computed.has_border_bottom
+        || link_computed.has_box_shadow
+    {
+        return true;
+    }
+    let pw = parent_computed.font_weight.unwrap_or(400);
+    if let Some(lw) = link_computed.font_weight
+        && ((lw >= 600 && lw > pw) || (pw >= 700 && lw < 600))
+    {
+        return true;
+    }
+    if is_italic_style(link_computed.font_style.as_deref())
+        != is_italic_style(parent_computed.font_style.as_deref())
+    {
+        return true;
+    }
+    if link_computed.background_color.is_some_and(|bg| bg.a > 0.0)
+        && link_computed.background_color != parent_computed.background_color
+    {
+        return true;
+    }
+    false
+}
+
+fn link_has_visual_style_cue(
+    doc: &Document,
+    el: &Node,
+    link_computed: &ComputedStyle,
+    parent_computed: &ComputedStyle,
+) -> bool {
+    if computed_has_link_style_cue(link_computed, parent_computed) {
+        return true;
+    }
+    if !doc.has_direct_text(el.id) {
+        let child_elements: Vec<&Node> = el
+            .children
+            .iter()
+            .filter_map(|&cid| doc.node(cid))
+            .filter(|n| n.is_element() && doc.is_in_accessibility_tree(n.id))
+            .collect();
+        if !child_elements.is_empty()
+            && child_elements.iter().all(|child| {
+                child
+                    .computed
+                    .as_ref()
+                    .is_some_and(|cc| computed_has_link_style_cue(cc, parent_computed))
+            })
+        {
+            return true;
+        }
+    }
+    false
+}
+
 impl Rule for LinkInTextBlock {
     fn meta(&self) -> RuleMeta {
         Self::META
@@ -912,20 +1106,6 @@ impl Rule for LinkInTextBlock {
             if link_computed.color.is_none() || is_block_display(link_computed.display.as_deref()) {
                 continue;
             }
-            if link_computed
-                .text_decoration_line
-                .as_deref()
-                .is_some_and(|d| {
-                    let lower = d.to_ascii_lowercase();
-                    lower.contains("underline")
-                        || lower.contains("overline")
-                        || lower.contains("line-through")
-                })
-                || link_computed.has_border_bottom
-                || link_computed.has_box_shadow
-            {
-                continue;
-            }
             let Some(text_block_id) = doc
                 .ancestors(el.id)
                 .into_iter()
@@ -941,7 +1121,7 @@ impl Rule for LinkInTextBlock {
             }) {
                 continue;
             }
-            if !block_has_non_link_text(doc, text_block_id, el.id) {
+            if !link_is_in_prose_text_block(doc, text_block_id, el.id) {
                 continue;
             }
             let Some(parent_computed) = doc.node(text_block_id).and_then(|n| n.computed.as_ref())
@@ -951,19 +1131,7 @@ impl Rule for LinkInTextBlock {
             if parent_computed.color.is_none() {
                 continue;
             }
-            if link_computed.font_weight.is_some_and(|lw| lw >= 700)
-                && parent_computed.font_weight.unwrap_or(400) < 600
-            {
-                continue;
-            }
-            if is_italic_style(link_computed.font_style.as_deref())
-                != is_italic_style(parent_computed.font_style.as_deref())
-            {
-                continue;
-            }
-            if link_computed.background_color.is_some_and(|bg| bg.a > 0.0)
-                && link_computed.background_color != parent_computed.background_color
-            {
+            if link_has_visual_style_cue(doc, el, link_computed, parent_computed) {
                 continue;
             }
             let bg = effective_background(doc, el.id);
@@ -1306,7 +1474,11 @@ impl Rule for ScrollableRegionFocusable {
 
     fn run(&self, doc: &Document, out: &mut Vec<Violation>) {
         for el in doc.elements() {
-            if matches!(el.tag.as_str(), "html" | "body") || !doc.is_in_accessibility_tree(el.id) {
+            if matches!(el.tag.as_str(), "html" | "body")
+                || !doc.is_in_accessibility_tree(el.id)
+                || is_visually_hidden(doc, el.id)
+                || el.rect.is_some_and(|r| r.width <= 0.0 || r.height <= 0.0)
+            {
                 continue;
             }
             let Some(computed) = &el.computed else {

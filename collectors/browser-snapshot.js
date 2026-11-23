@@ -1562,7 +1562,8 @@
               (computed &&
                 (computed.display === 'none' ||
                   computed.visibility === 'hidden' ||
-                  computed.visibility === 'collapse'));
+                  computed.visibility === 'collapse')) ||
+              (rect && (rect.width <= 0 || rect.height <= 0));
           if (!ariaHidden && !selfHidden) {
             try {
               const frameDoc = domNode.contentDocument;

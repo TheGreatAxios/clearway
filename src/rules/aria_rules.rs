@@ -309,23 +309,31 @@ impl DuplicateIdAria {
     };
 }
 
+fn id_document_scope(doc: &Document, id: NodeId) -> Option<NodeId> {
+    doc.ancestors(id).into_iter().find(|&anc_id| {
+        doc.node(anc_id)
+            .is_some_and(|anc| matches!(anc.tag.as_str(), "iframe" | "frame"))
+    })
+}
+
 impl Rule for DuplicateIdAria {
     fn meta(&self) -> RuleMeta {
         Self::META
     }
 
     fn run(&self, doc: &Document, out: &mut Vec<Violation>) {
-        let mut referenced_ids: BTreeSet<&str> = BTreeSet::new();
+        let mut referenced_ids: BTreeSet<(Option<NodeId>, &str)> = BTreeSet::new();
         for el in doc.elements() {
+            let scope = id_document_scope(doc, el.id);
             if el.tag == "label"
                 && let Some(target) = el.attr("for").map(str::trim).filter(|s| !s.is_empty())
             {
-                referenced_ids.insert(target);
+                referenced_ids.insert((scope, target));
             }
             for &attr in ARIA_IDREF_ATTRS {
                 if let Some(val) = el.attr(attr) {
                     for token in val.split_ascii_whitespace() {
-                        referenced_ids.insert(token);
+                        referenced_ids.insert((scope, token));
                     }
                 }
             }
@@ -334,16 +342,17 @@ impl Rule for DuplicateIdAria {
             return;
         }
 
-        let mut id_nodes: BTreeMap<&str, Vec<NodeId>> = BTreeMap::new();
+        let mut id_nodes: BTreeMap<(Option<NodeId>, &str), Vec<NodeId>> = BTreeMap::new();
         for el in doc.elements() {
-            if let Some(id_val) = el.id_attr()
-                && referenced_ids.contains(id_val)
-            {
-                id_nodes.entry(id_val).or_default().push(el.id);
+            if let Some(id_val) = el.id_attr() {
+                let key = (id_document_scope(doc, el.id), id_val);
+                if referenced_ids.contains(&key) {
+                    id_nodes.entry(key).or_default().push(el.id);
+                }
             }
         }
 
-        for (id_val, nodes) in id_nodes {
+        for ((_, id_val), nodes) in id_nodes {
             if nodes.len() > 1 {
                 for &nid in &nodes[1..] {
                     out.push(Violation::with_detail(
@@ -1169,7 +1178,7 @@ impl Rule for AriaProhibitedAttr {
 
     fn run(&self, doc: &Document, out: &mut Vec<Violation>) {
         for el in doc.elements() {
-            if !doc.is_rendered(el.id) {
+            if !doc.is_in_accessibility_tree(el.id) {
                 continue;
             }
             let role = prohibited_role_for_element(doc, el);
@@ -1200,7 +1209,7 @@ impl Rule for AriaProhibitedAttr {
                 })
                 .collect();
             if !found.is_empty() {
-                out.push(Violation::with_detail(
+                let mut v = Violation::with_detail(
                     &Self::META,
                     doc,
                     el.id,
@@ -1209,7 +1218,18 @@ impl Rule for AriaProhibitedAttr {
                         role.unwrap_or(el.tag.as_str()),
                         found.join(", ")
                     ),
-                ));
+                );
+                // Per axe-core (`aria-prohibited-attr`), naming attributes on generic/native
+                // non-widget elements without an explicit role are routed to `incomplete`
+                // (`needsReview`) because AT support varies.
+                let is_generic_naming_only = explicit_role(el).is_none()
+                    && found.iter().all(|&attr| {
+                        matches!(attr, "aria-label" | "aria-labelledby" | "aria-braillelabel")
+                    });
+                if is_generic_naming_only {
+                    v = v.into_incomplete();
+                }
+                out.push(v);
             }
         }
     }

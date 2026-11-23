@@ -125,7 +125,9 @@ fn document_rules_milestone3_pass_and_fail() {
            <p style="word-spacing: 2px ! important;">Too tight word spacing</p>
            <p style="line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important;">Meets WCAG 1.4.12</p>
            <p style="line-height: 1.0 !important; line-height: 1.6 !important;">Last !important wins</p>
-           <p style="line-height: 1.2; letter-spacing: 0.05em;">Adjustable</p>"#,
+           <p style="line-height: 1.2; letter-spacing: 0.05em;">Adjustable</p>
+           <p style="letter-spacing: initial !important; word-spacing: normal !important; line-height: inherit !important;">CSS keyword resets</p>
+           <p style="letter-spacing: unset !important; word-spacing: revert-layer !important; line-height: auto !important;">More CSS keywords</p>"#,
     );
     assert_eq!(violations(&spacing, "avoid-inline-spacing").len(), 3);
 }
@@ -226,7 +228,7 @@ fn form_rules_milestone3_pass_and_fail() {
     );
     assert_eq!(violations(&ac, "autocomplete-valid").len(), 2);
 
-    // 17. form-field-multiple-labels
+    // 17. form-field-multiple-labels (routed to incomplete by default)
     let multi_lbl = page(
         r#"<form>
              <label for="u1">First</label>
@@ -236,17 +238,32 @@ fn form_rules_milestone3_pass_and_fail() {
              <input id="u2" type="text">
            </form>"#,
     );
+    let multi_report = audit_html(&multi_lbl, &AuditOptions::default());
     assert_eq!(
-        violations(&multi_lbl, "form-field-multiple-labels").len(),
+        multi_report
+            .violations
+            .iter()
+            .filter(|v| v.rule_id == "form-field-multiple-labels")
+            .count(),
+        0
+    );
+    assert_eq!(
+        multi_report
+            .incomplete
+            .iter()
+            .filter(|v| v.rule_id == "form-field-multiple-labels")
+            .count(),
         1
     );
 
-    // 18. label-content-name-mismatch
+    // 18. label-content-name-mismatch (skips <select> options and visually hidden elements)
     let mismatch = page(
         r#"<button aria-label="Submit form">Send</button>
            <button aria-label="Send message now">Send</button>
            <a href="/docs" aria-label="Read Documentation">Documentation</a>
-           <a href="/blog" aria-label="Articles">Blog</a>"#,
+           <a href="/blog" aria-label="Articles">Blog</a>
+           <select aria-label="Choose state"><option>Arkansas</option><option>Kansas</option></select>
+           <button style="opacity: 0" aria-label="Hidden action">Different text</button>"#,
     );
     assert_eq!(
         violations(&mismatch, "label-content-name-mismatch").len(),
