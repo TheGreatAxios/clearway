@@ -865,6 +865,217 @@
         };
       }
 
+      const PSEUDO_ELEMENTS = ['::before', '::after'];
+
+      /**
+       * Returns `true` if `cs` declares a non-hairline `background-image`.
+       * @param {!CSSStyleDeclaration} cs
+       * @return {boolean}
+       */
+      function hasNonHairlineBgImage(cs) {
+        return Boolean(
+            cs.backgroundImage &&
+            cs.backgroundImage !== 'none' &&
+            !(!/url\(/i.test(cs.backgroundImage) &&
+              isHairlineBackgroundSize(cs.backgroundSize)),
+        );
+      }
+
+      /**
+       * Returns `true` if `el` has a visible `::before` or `::after`
+       * pseudo-element that paints a non-hairline background color or image.
+       * @param {!Element} el
+       * @param {?Window} ownerWin
+       * @return {boolean}
+       */
+      function hasPseudoBackdrop(el, ownerWin) {
+        if (!el || !ownerWin || typeof ownerWin.getComputedStyle !== 'function') {
+          return false;
+        }
+        for (let i = 0; i < PSEUDO_ELEMENTS.length; i++) {
+          const pcs = ownerWin.getComputedStyle(el, PSEUDO_ELEMENTS[i]);
+          if (!pcs) {
+            continue;
+          }
+          const content = (pcs.content || '').trim();
+          if (!content || content === 'none' || content === 'normal') {
+            continue;
+          }
+          if (
+            pcs.display === 'none' ||
+            pcs.visibility === 'hidden' ||
+            pcs.visibility === 'collapse'
+          ) {
+            continue;
+          }
+          const op = parseFloat(pcs.opacity);
+          if (Number.isFinite(op) && op <= 0) {
+            continue;
+          }
+          const pw = parseFloat(pcs.width);
+          const ph = parseFloat(pcs.height);
+          if (
+            (Number.isFinite(pw) && pw <= 4) ||
+            (Number.isFinite(ph) && ph <= 4)
+          ) {
+            continue;
+          }
+          if (hasNonHairlineBgImage(pcs)) {
+            return true;
+          }
+          const pbg = parseRgba(pcs.backgroundColor);
+          if (pbg && pbg.a > 0) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      /**
+       * Returns `true` if DOMRect `r` has positive area and contains `(cx, cy)`.
+       * @param {?DOMRect} r
+       * @param {number} cx
+       * @param {number} cy
+       * @return {boolean}
+       */
+      function rectContainsPoint(r, cx, cy) {
+        return Boolean(
+            r &&
+            r.width > 0 &&
+            r.height > 0 &&
+            cx >= r.left &&
+            cx <= r.right &&
+            cy >= r.top &&
+            cy <= r.bottom,
+        );
+      }
+
+      /**
+       * Inspects a sibling backdrop subtree (bounded BFS) to see whether any
+       * visible descendant covering `(cx, cy)` paints a graphic, background
+       * image/gradient, pseudo-element backdrop, or non-transparent background.
+       * @param {!Element} root
+       * @param {number} cx
+       * @param {number} cy
+       * @param {!Window} ownerWin
+       * @return {boolean}
+       */
+      function subtreeHasBackdropAtPoint(root, cx, cy, ownerWin) {
+        const queue = [{node: root, depth: 0}];
+        let visited = 0;
+        while (queue.length > 0 && visited < 24) {
+          const item = queue.shift();
+          const node = item.node;
+          const depth = item.depth;
+          visited++;
+          const cs = ownerWin.getComputedStyle(node);
+          if (
+            cs.display === 'none' ||
+            cs.visibility === 'hidden' ||
+            cs.visibility === 'collapse'
+          ) {
+            continue;
+          }
+          const op = parseFloat(cs.opacity);
+          const effOp = Number.isFinite(op) ? clamp(op, 0, 1) : 1;
+          if (effOp <= 0) {
+            continue;
+          }
+          const r = typeof node.getBoundingClientRect === 'function' ?
+            node.getBoundingClientRect() :
+            null;
+          if (!rectContainsPoint(r, cx, cy)) {
+            continue;
+          }
+          const tag = (node.localName || node.tagName || '').toLowerCase();
+          if (
+            GRAPHIC_BACKDROP_TAGS.has(tag) ||
+            node.namespaceURI === SVG_NAMESPACE
+          ) {
+            return true;
+          }
+          if (hasNonHairlineBgImage(cs) || hasPseudoBackdrop(node, ownerWin)) {
+            return true;
+          }
+          const bg = parseRgba(cs.backgroundColor);
+          if (bg && bg.a * effOp > 0) {
+            return true;
+          }
+          if (depth < 4 && node.children) {
+            for (let i = 0; i < node.children.length; i++) {
+              queue.push({node: node.children[i], depth: depth + 1});
+            }
+          }
+        }
+        return false;
+      }
+
+      /**
+       * Fallback backdrop detector for elements outside the viewport (where
+       * `elementsFromPoint` returns `[]`) or omitted from the hit-test stack.
+       * Checks ancestor `::before`/`::after` pseudo-elements and overlapping
+       * sibling backdrop layers (e.g. `.row-bg-wrap`, positioned gradient overlays).
+       * @param {!Element} el
+       * @param {number} cx
+       * @param {number} cy
+       * @param {!Document} ownerDoc
+       * @param {!Window} ownerWin
+       * @return {boolean}
+       */
+      function hasOffscreenBackdrop(el, cx, cy, ownerDoc, ownerWin) {
+        let cur = el;
+        let depth = 0;
+        while (cur && cur.nodeType === 1 && depth < 64) {
+          depth++;
+          const cs = ownerWin.getComputedStyle(cur);
+          const op = parseFloat(cs.opacity);
+          const effOp = Number.isFinite(op) ? clamp(op, 0, 1) : 1;
+          if (effOp > 0 && hasPseudoBackdrop(cur, ownerWin)) {
+            return true;
+          }
+          if (cur !== el) {
+            if (effOp > 0 && hasNonHairlineBgImage(cs)) {
+              return false;
+            }
+            const bg = parseRgba(cs.backgroundColor);
+            if (bg && bg.a * effOp >= 0.99) {
+              return false;
+            }
+          }
+          const parent = cur.parentElement;
+          if (!parent || parent === ownerDoc.documentElement) {
+            break;
+          }
+          const siblings = parent.children;
+          const limit = Math.min(siblings.length, 64);
+          let seenCur = false;
+          for (let i = 0; i < limit; i++) {
+            const sib = siblings[i];
+            if (sib === cur) {
+              seenCur = true;
+              continue;
+            }
+            if (seenCur) {
+              const scs = ownerWin.getComputedStyle(sib);
+              const pos = scs.position;
+              const z = parseInt(scs.zIndex, 10);
+              if (
+                pos !== 'absolute' &&
+                pos !== 'fixed' &&
+                !(Number.isFinite(z) && z < 0)
+              ) {
+                continue;
+              }
+            }
+            if (subtreeHasBackdropAtPoint(sib, cx, cy, ownerWin)) {
+              return true;
+            }
+          }
+          cur = parent;
+        }
+        return false;
+      }
+
       /**
        * Resolves the effective visual background behind a direct-text element
        * via `elementsFromPoint`, handling z-index layers and canvas propagation.
@@ -887,7 +1098,8 @@
         if (
           computed.display === 'none' ||
           computed.visibility === 'hidden' ||
-          computed.visibility === 'collapse'
+          computed.visibility === 'collapse' ||
+          (computed.opacity !== undefined && computed.opacity <= 0)
         ) {
           return;
         }
@@ -930,12 +1142,23 @@
           cy < 0 ||
           cy >= ownerWin.innerHeight
         ) {
+          if (hasOffscreenBackdrop(el, cx, cy, ownerDoc, ownerWin)) {
+            computed.has_background_image = true;
+          }
           return;
         }
 
         const stack = ownerDoc.elementsFromPoint(cx, cy);
         const idx = stack.indexOf(el);
         if (idx === -1) {
+          if (hasOffscreenBackdrop(el, cx, cy, ownerDoc, ownerWin)) {
+            computed.has_background_image = true;
+          }
+          return;
+        }
+
+        if (hasPseudoBackdrop(el, ownerWin)) {
+          computed.has_background_image = true;
           return;
         }
 
@@ -957,23 +1180,24 @@
           const lcs = ownerWin.getComputedStyle(layer);
           const lop = parseFloat(lcs.opacity);
           const op = Number.isFinite(lop) ? clamp(lop, 0, 1) : 1;
+          if (op <= 0) {
+            continue;
+          }
           const ltag = (layer.localName || layer.tagName || '').toLowerCase();
           if (
-            op > 0 &&
-            (GRAPHIC_BACKDROP_TAGS.has(ltag) ||
-              layer.namespaceURI === SVG_NAMESPACE)
+            GRAPHIC_BACKDROP_TAGS.has(ltag) ||
+            layer.namespaceURI === SVG_NAMESPACE
           ) {
             computed.has_background_image = true;
             return;
           }
           const isPropagatedBody =
               bodyPropagatesToCanvas && layer === ownerDoc.body;
-          if (
-            lcs.backgroundImage &&
-            lcs.backgroundImage !== 'none' &&
-            !(!/url\(/i.test(lcs.backgroundImage) &&
-              isHairlineBackgroundSize(lcs.backgroundSize))
-          ) {
+          if (!isPropagatedBody && hasPseudoBackdrop(layer, ownerWin)) {
+            computed.has_background_image = true;
+            return;
+          }
+          if (hasNonHairlineBgImage(lcs)) {
             if (isPropagatedBody) {
               deferredCanvasBgImage = /url\(/i.test(lcs.backgroundImage);
               continue;

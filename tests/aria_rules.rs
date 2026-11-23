@@ -90,15 +90,16 @@ fn aria_name_rules_pass_and_fail() {
     );
     assert_eq!(violations(&tab, "aria-tab-name").len(), 1);
 
-    // 7. aria-toggle-field-name (skips native <input>)
+    // 7. aria-toggle-field-name (skips native <input> and non-toggle containers like menu/radiogroup)
     let toggle = page(
         r#"<div role="checkbox" aria-checked="false"></div>
            <div role="switch" aria-checked="true"></div>
+           <ul role="menu"><li role="menuitem">Item</li></ul>
            <div role="radiogroup"><div role="radio" aria-checked="false">A</div></div>
            <div role="checkbox" aria-checked="true" aria-label="Accept"></div>
            <input type="checkbox" role="checkbox">"#,
     );
-    assert_eq!(violations(&toggle, "aria-toggle-field-name").len(), 3);
+    assert_eq!(violations(&toggle, "aria-toggle-field-name").len(), 2);
 
     // 8. aria-tooltip-name
     let tooltip = page(
@@ -295,4 +296,47 @@ fn html_aam_aria_precision_and_violation_attribution() {
     assert_eq!(lm.len(), 1);
     assert_eq!(lm[0].selector, "#n1");
     assert_eq!(violations(&attr_doc, "button-name").len(), 0);
+}
+
+#[test]
+fn button_name_aria_command_no_double_count_and_nested_menuitem() {
+    // Non-native [role="button"] is reported only by aria-command-name, not button-name.
+    // Native <button role="button"> is reported only by button-name, not aria-command-name.
+    let doc = page(
+        r#"<a id="a-btn" role="button"></a>
+           <button id="native-btn" role="button"></button>"#,
+    );
+    let btn_fails = violations(&doc, "button-name");
+    let cmd_fails = violations(&doc, "aria-command-name");
+    assert_eq!(
+        btn_fails
+            .iter()
+            .map(|v| v.selector.as_str())
+            .collect::<Vec<_>>(),
+        vec!["#native-btn"]
+    );
+    assert_eq!(
+        cmd_fails
+            .iter()
+            .map(|v| v.selector.as_str())
+            .collect::<Vec<_>>(),
+        vec!["#a-btn"]
+    );
+
+    // Non-focusable <li role="menuitem"> wrapping <a href> is not nested-interactive,
+    // while a focusable <li role="menuitem" tabindex="0"> wrapping <a href> is.
+    let menu = page(
+        r#"<ul role="menu">
+             <li id="non-focusable" role="menuitem"><a href="/about">About</a></li>
+             <li id="focusable" role="menuitem" tabindex="0"><a href="/contact">Contact</a></li>
+           </ul>"#,
+    );
+    let nested_fails = violations(&menu, "nested-interactive");
+    assert_eq!(
+        nested_fails
+            .iter()
+            .map(|v| v.selector.as_str())
+            .collect::<Vec<_>>(),
+        vec!["#focusable"]
+    );
 }

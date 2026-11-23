@@ -928,3 +928,102 @@ fn link_in_text_block_non_color_distinctions_and_punctuation_separators() {
     let selectors: Vec<&str> = fails.iter().map(|v| v.selector.as_str()).collect();
     assert_eq!(selectors, vec!["#plain"]);
 }
+
+#[test]
+fn visually_hidden_opacity_zero_and_sr_only_skipped_by_visual_rules() {
+    let mut doc = parse_html(&page(
+        r#"<div id="fade">
+             <p id="fade-p">Hidden text <a id="fade-link" href="/x">link</a></p>
+             <button id="fade-btn">Go</button>
+             <button id="fade-btn-2">Go2</button>
+           </div>
+           <div id="sr-box">
+             <span id="sr-text">Play Video</span>
+           </div>
+           <span id="clipped-text">Search</span>
+           <p id="visible-low">Low contrast</p>"#,
+    ));
+    let low_fg = Rgba::opaque(255, 255, 255);
+    let white_bg = Rgba::opaque(255, 255, 255);
+    for node in &mut doc.nodes {
+        match node.id_attr() {
+            Some("fade") => {
+                node.computed = Some(ComputedStyle {
+                    opacity: Some(0.0),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("fade-p" | "sr-text" | "visible-low") => {
+                node.computed = Some(ComputedStyle {
+                    color: Some(low_fg),
+                    background_color: Some(white_bg),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("fade-link") => {
+                node.computed = Some(ComputedStyle {
+                    color: Some(low_fg),
+                    text_decoration_line: Some("none".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("fade-btn") => {
+                node.rect = Some(Rect {
+                    x: 10.0,
+                    y: 10.0,
+                    width: 12.0,
+                    height: 12.0,
+                });
+            }
+            Some("fade-btn-2") => {
+                node.rect = Some(Rect {
+                    x: 24.0,
+                    y: 10.0,
+                    width: 12.0,
+                    height: 12.0,
+                });
+            }
+            Some("sr-box") => {
+                node.rect = Some(Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 1.0,
+                    height: 1.0,
+                });
+                node.computed = Some(ComputedStyle {
+                    overflow_x: Some("hidden".to_owned()),
+                    overflow_y: Some("hidden".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("clipped-text") => {
+                node.computed = Some(ComputedStyle {
+                    color: Some(low_fg),
+                    background_color: Some(white_bg),
+                    is_clipped: true,
+                    ..ComputedStyle::default()
+                });
+            }
+            _ => {}
+        }
+    }
+
+    let cc_fails = doc_violations(&doc, "color-contrast", false);
+    assert_eq!(
+        cc_fails
+            .iter()
+            .map(|v| v.selector.as_str())
+            .collect::<Vec<_>>(),
+        vec!["#visible-low"]
+    );
+    let apca_fails = doc_violations(&doc, "apca-contrast", true);
+    assert_eq!(
+        apca_fails
+            .iter()
+            .map(|v| v.selector.as_str())
+            .collect::<Vec<_>>(),
+        vec!["#visible-low"]
+    );
+    assert_eq!(doc_violations(&doc, "link-in-text-block", false).len(), 0);
+    assert_eq!(doc_violations(&doc, "target-size", false).len(), 0);
+}

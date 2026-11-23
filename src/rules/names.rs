@@ -138,7 +138,7 @@ impl Rule for ButtonName {
                         | "treeitem"
                 )
             ) || (role == Some("gridcell") && el.has_attr("disabled"));
-            let is_btn = (el.tag == "button" && !is_overridden_widget) || role == Some("button");
+            let is_btn = el.tag == "button" && !is_overridden_widget;
             if !is_btn {
                 continue;
             }

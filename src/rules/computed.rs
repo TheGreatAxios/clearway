@@ -281,6 +281,41 @@ pub(crate) fn has_effective_background_image(doc: &Document, id: NodeId) -> bool
     false
 }
 
+/// Returns `true` if `id` or any ancestor is visually hidden from sighted users
+/// via `opacity: 0`, CSS `clip`/`clip-path` collapsing, or classic `.sr-only`
+/// (`<= 1.5x1.5px` with `overflow: hidden|clip`).
+pub(crate) fn is_visually_hidden(doc: &Document, id: NodeId) -> bool {
+    let is_hidden_overflow = |v: Option<&str>| {
+        v.is_some_and(|s| {
+            let t = s.trim();
+            t.eq_ignore_ascii_case("hidden") || t.eq_ignore_ascii_case("clip")
+        })
+    };
+    for nid in std::iter::once(id).chain(doc.ancestors(id)) {
+        let Some(node) = doc.node(nid) else {
+            continue;
+        };
+        let Some(computed) = node.computed.as_ref() else {
+            continue;
+        };
+        if computed.opacity.is_some_and(|op| op <= 0.0) {
+            return true;
+        }
+        if computed.is_clipped {
+            return true;
+        }
+        if let Some(rect) = node.rect
+            && rect.width <= 1.5
+            && rect.height <= 1.5
+            && (is_hidden_overflow(computed.overflow_x.as_deref())
+                || is_hidden_overflow(computed.overflow_y.as_deref()))
+        {
+            return true;
+        }
+    }
+    false
+}
+
 #[allow(clippy::too_many_lines)]
 fn evaluate_contrast(
     meta: &RuleMeta,
@@ -292,6 +327,7 @@ fn evaluate_contrast(
     for el in doc.elements() {
         if !doc.is_in_accessibility_tree(el.id)
             || !doc.has_direct_text(el.id)
+            || is_visually_hidden(doc, el.id)
             || is_inactive_ui_control_or_label(doc, el.id)
             || is_non_text_icon_glyph(doc, el)
         {
@@ -863,7 +899,11 @@ impl Rule for LinkInTextBlock {
 
     fn run(&self, doc: &Document, out: &mut Vec<Violation>) {
         for el in doc.elements() {
-            if el.tag != "a" || !el.has_attr("href") || !doc.is_in_accessibility_tree(el.id) {
+            if el.tag != "a"
+                || !el.has_attr("href")
+                || !doc.is_in_accessibility_tree(el.id)
+                || is_visually_hidden(doc, el.id)
+            {
                 continue;
             }
             let Some(link_computed) = &el.computed else {
@@ -1317,33 +1357,14 @@ fn is_inline_in_text_block(doc: &Document, el: &Node) -> bool {
     block_has_non_link_text(doc, text_block_id, el.id)
 }
 
-/// Returns `true` if `el` is visually hidden / collapsed (zero-sized, clipped via
-/// `clip`/`clip-path`, or `<= 1.5x1.5px` with `overflow: hidden|clip`, e.g. `.sr-only`
-/// skip links that expand on focus).
-fn is_visually_hidden_target(el: &Node, rect: Rect) -> bool {
+/// Returns `true` if `el` (or an ancestor) is visually hidden / collapsed
+/// (zero-sized, `opacity: 0`, clipped via `clip`/`clip-path`, or `<= 1.5x1.5px`
+/// with `overflow: hidden|clip`, e.g. `.sr-only` skip links that expand on focus).
+fn is_visually_hidden_target(doc: &Document, el: &Node, rect: Rect) -> bool {
     if rect.width <= 0.0 || rect.height <= 0.0 {
         return true;
     }
-    let Some(computed) = el.computed.as_ref() else {
-        return false;
-    };
-    if computed.is_clipped {
-        return true;
-    }
-    if rect.width <= 1.5 && rect.height <= 1.5 {
-        let is_hidden_overflow = |v: Option<&str>| {
-            v.is_some_and(|s| {
-                let t = s.trim();
-                t.eq_ignore_ascii_case("hidden") || t.eq_ignore_ascii_case("clip")
-            })
-        };
-        if is_hidden_overflow(computed.overflow_x.as_deref())
-            || is_hidden_overflow(computed.overflow_y.as_deref())
-        {
-            return true;
-        }
-    }
-    false
+    is_visually_hidden(doc, el.id)
 }
 
 fn is_undersized_rect(rect: Rect) -> bool {
@@ -1455,7 +1476,7 @@ impl Rule for TargetSize {
                     return None;
                 }
                 let rect = el.rect?;
-                if is_visually_hidden_target(el, rect) {
+                if is_visually_hidden_target(doc, el, rect) {
                     return None;
                 }
                 let undersized = is_undersized_rect(rect);

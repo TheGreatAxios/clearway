@@ -16,7 +16,7 @@ use crate::ir::{Document, NodeId};
 use crate::rule::{Impact, Rule, RuleMeta, Violation};
 use crate::rules::computed::{
     effective_gradient_stops, has_effective_background_image, is_inactive_ui_control_or_label,
-    is_node_or_ancestor_disabled, is_non_text_icon_glyph,
+    is_node_or_ancestor_disabled, is_non_text_icon_glyph, is_visually_hidden,
 };
 
 pub struct AccessibleAuthentication;
@@ -546,6 +546,7 @@ impl Rule for ApcaContrast {
         for el in doc.elements() {
             if !doc.is_in_accessibility_tree(el.id)
                 || !doc.has_direct_text(el.id)
+                || is_visually_hidden(doc, el.id)
                 || is_inactive_ui_control_or_label(doc, el.id)
                 || is_non_text_icon_glyph(doc, el)
             {

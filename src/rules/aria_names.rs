@@ -75,7 +75,24 @@ impl Rule for AriaCommandName {
     }
 
     fn run(&self, doc: &Document, out: &mut Vec<Violation>) {
-        check_role_names(&Self::META, doc, &["button", "link", "menuitem"], &[], out);
+        for el in doc.elements() {
+            if !doc.is_in_accessibility_tree(el.id) {
+                continue;
+            }
+            let Some(role) = explicit_role(el) else {
+                continue;
+            };
+            if !matches!(role, "button" | "link" | "menuitem") {
+                continue;
+            }
+            // Native `<button role="button">` is already owned by `button-name`.
+            if el.tag == "button" && role == "button" {
+                continue;
+            }
+            if accessible_name(doc, el.id).is_empty() {
+                out.push(Violation::from_node(&Self::META, doc, el.id));
+            }
+        }
     }
 }
 
@@ -286,12 +303,9 @@ impl Rule for AriaToggleFieldName {
             doc,
             &[
                 "checkbox",
-                "menu",
                 "menuitemcheckbox",
                 "menuitemradio",
-                "option",
                 "radio",
-                "radiogroup",
                 "switch",
             ],
             &["input"],

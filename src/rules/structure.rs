@@ -362,6 +362,20 @@ impl NestedInteractive {
     };
 }
 
+fn is_focusable_control(node: &Node) -> bool {
+    if !node.is_element() || node.has_attr("disabled") {
+        return false;
+    }
+    if node
+        .attr("tabindex")
+        .and_then(|t| t.trim().parse::<i32>().ok())
+        .is_some()
+    {
+        return true;
+    }
+    is_natively_focusable(node)
+}
+
 impl Rule for NestedInteractive {
     fn meta(&self) -> RuleMeta {
         Self::META
@@ -373,7 +387,9 @@ impl Rule for NestedInteractive {
                 continue;
             }
             let is_img_role = effective_role(doc, el) == Some("img");
-            if !is_interactive_control(doc, el) && !is_img_role {
+            let is_focusable_interactive =
+                is_interactive_control(doc, el) && is_focusable_control(el);
+            if !is_focusable_interactive && !is_img_role {
                 continue;
             }
             // <select> legitimately contains <option> children.
@@ -402,7 +418,7 @@ fn has_interactive_descendant(doc: &Document, parent_id: NodeId) -> bool {
         if !child.is_element() || !doc.is_rendered(cid) {
             continue;
         }
-        if is_interactive_control(doc, child) {
+        if is_interactive_control(doc, child) && is_focusable_control(child) {
             return true;
         }
         stack.extend(&child.children);
