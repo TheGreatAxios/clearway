@@ -1219,7 +1219,7 @@ impl Rule for AriaProhibitedAttr {
                         found.join(", ")
                     ),
                 );
-                // Per axe-core (`aria-prohibited-attr`), naming attributes on generic/native
+                // Per ARIA in HTML (`aria-prohibited-attr`), naming attributes on generic/native
                 // non-widget elements without an explicit role are routed to `incomplete`
                 // (`needsReview`) because AT support varies.
                 let is_generic_naming_only = explicit_role(el).is_none()
