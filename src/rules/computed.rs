@@ -297,8 +297,9 @@ pub(crate) fn has_effective_background_image(doc: &Document, id: NodeId) -> bool
 }
 
 /// Returns `true` if `id` or any ancestor is visually hidden from sighted users
-/// via `opacity: 0`, CSS `clip`/`clip-path` collapsing, or classic `.sr-only`
-/// (`<= 1.5x1.5px` with `overflow: hidden|clip`).
+/// via `opacity: 0`, CSS `clip`/`clip-path` collapsing, classic `.sr-only`
+/// (`<= 1.5x1.5px` with `overflow: hidden|clip`), or being positioned entirely
+/// outside a non-scrollable `overflow: hidden|clip` ancestor's bounding box.
 pub(crate) fn is_visually_hidden(doc: &Document, id: NodeId) -> bool {
     let is_hidden_overflow = |v: Option<&str>| {
         v.is_some_and(|s| {
@@ -306,6 +307,10 @@ pub(crate) fn is_visually_hidden(doc: &Document, id: NodeId) -> bool {
             t.eq_ignore_ascii_case("hidden") || t.eq_ignore_ascii_case("clip")
         })
     };
+    let el_rect = doc
+        .node(id)
+        .and_then(|n| n.rect)
+        .filter(|r| r.width > 0.0 && r.height > 0.0);
     for nid in std::iter::once(id).chain(doc.ancestors(id)) {
         let Some(node) = doc.node(nid) else {
             continue;
@@ -319,14 +324,29 @@ pub(crate) fn is_visually_hidden(doc: &Document, id: NodeId) -> bool {
         if computed.is_clipped {
             return true;
         }
-        if let Some(rect) = node.rect
-            && (is_hidden_overflow(computed.overflow_x.as_deref())
-                || is_hidden_overflow(computed.overflow_y.as_deref()))
-            && ((rect.width <= 1.5 && rect.height <= 1.5)
-                || rect.width <= 0.0
-                || rect.height <= 0.0)
-        {
-            return true;
+        if let Some(rect) = node.rect {
+            let clip_x = is_hidden_overflow(computed.overflow_x.as_deref());
+            let clip_y = is_hidden_overflow(computed.overflow_y.as_deref());
+            if (clip_x || clip_y)
+                && ((rect.width <= 1.5 && rect.height <= 1.5)
+                    || rect.width <= 0.0
+                    || rect.height <= 0.0)
+            {
+                return true;
+            }
+            if nid != id
+                && let Some(er) = el_rect
+                && rect.width > 0.0
+                && rect.height > 0.0
+            {
+                let clipped_x = clip_x
+                    && (er.x + er.width <= rect.x + 0.5 || er.x >= rect.x + rect.width - 0.5);
+                let clipped_y = clip_y
+                    && (er.y + er.height <= rect.y + 0.5 || er.y >= rect.y + rect.height - 0.5);
+                if clipped_x || clipped_y {
+                    return true;
+                }
+            }
         }
     }
     false

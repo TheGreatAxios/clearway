@@ -497,12 +497,16 @@ impl Rule for AriaAllowedRole {
                 continue;
             };
             if !is_role_allowed_on_element(doc, el, role) {
-                out.push(Violation::with_detail(
+                let mut v = Violation::with_detail(
                     &Self::META,
                     doc,
                     el.id,
                     format!("ARIA role '{role}' is not allowed on <{}>.", el.tag),
-                ));
+                );
+                if doc.is_aria_hidden(el.id) && !is_sequentially_focusable(el) {
+                    v = v.into_incomplete();
+                }
+                out.push(v);
             }
         }
     }

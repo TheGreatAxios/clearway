@@ -1195,3 +1195,104 @@ fn precision_audit_link_in_text_block_regressions() {
         .collect();
     assert_eq!(litb_fails, vec!["#true-bad-link"]);
 }
+
+#[test]
+fn color_contrast_skips_overflow_hidden_offscreen_elements() {
+    let mut doc = parse_html(
+        r#"<!doctype html><html lang="en"><head><title>T</title></head><body>
+           <div id="carousel">
+             <button id="visible-slide">Current Month</button>
+             <button id="offscreen-slide">Next Month</button>
+           </div>
+           <div id="scroller">
+             <button id="scrolled-item">Scrollable Item</button>
+           </div>
+           </body></html>"#,
+    );
+    let low_fg = Rgba::opaque(180, 180, 180);
+    let white = Rgba::opaque(255, 255, 255);
+    for node in &mut doc.nodes {
+        match node.id_attr() {
+            Some("carousel") => {
+                node.rect = Some(Rect {
+                    x: 40.0,
+                    y: 100.0,
+                    width: 220.0,
+                    height: 200.0,
+                });
+                node.computed = Some(ComputedStyle {
+                    background_color: Some(white),
+                    overflow_x: Some("hidden".to_owned()),
+                    overflow_y: Some("hidden".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("visible-slide") => {
+                node.rect = Some(Rect {
+                    x: 50.0,
+                    y: 120.0,
+                    width: 100.0,
+                    height: 30.0,
+                });
+                node.computed = Some(ComputedStyle {
+                    color: Some(low_fg),
+                    background_color: Some(white),
+                    font_size_px: Some(14.0),
+                    font_weight: Some(400),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("offscreen-slide") => {
+                node.rect = Some(Rect {
+                    x: 261.0,
+                    y: 120.0,
+                    width: 218.0,
+                    height: 30.0,
+                });
+                node.computed = Some(ComputedStyle {
+                    color: Some(low_fg),
+                    background_color: Some(white),
+                    font_size_px: Some(14.0),
+                    font_weight: Some(400),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("scroller") => {
+                node.rect = Some(Rect {
+                    x: 40.0,
+                    y: 320.0,
+                    width: 220.0,
+                    height: 200.0,
+                });
+                node.computed = Some(ComputedStyle {
+                    background_color: Some(white),
+                    overflow_x: Some("auto".to_owned()),
+                    overflow_y: Some("auto".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("scrolled-item") => {
+                node.rect = Some(Rect {
+                    x: 261.0,
+                    y: 340.0,
+                    width: 120.0,
+                    height: 30.0,
+                });
+                node.computed = Some(ComputedStyle {
+                    color: Some(low_fg),
+                    background_color: Some(white),
+                    font_size_px: Some(14.0),
+                    font_weight: Some(400),
+                    ..ComputedStyle::default()
+                });
+            }
+            _ => {}
+        }
+    }
+
+    let fails: Vec<String> = doc_violations(&doc, "color-contrast", false)
+        .into_iter()
+        .map(|v| v.selector)
+        .collect();
+    assert_eq!(fails, vec!["#visible-slide", "#scrolled-item"]);
+}

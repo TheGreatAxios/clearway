@@ -366,6 +366,7 @@ impl Rule for PointerEventsFocusable {
             if !doc.is_in_accessibility_tree(el.id)
                 || !is_sequentially_focusable(el)
                 || is_node_or_ancestor_disabled(doc, el.id)
+                || is_visually_hidden(doc, el.id)
             {
                 continue;
             }

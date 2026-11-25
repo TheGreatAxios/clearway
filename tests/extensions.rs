@@ -459,3 +459,62 @@ fn cyclic_ir_json_does_not_hang_or_stack_overflow() {
     );
     assert!(report.summary.rules_run > 0);
 }
+
+#[test]
+fn pointer_events_focusable_skips_visually_hidden_skip_links() {
+    let mut doc = parse_html(
+        r##"<!doctype html><html lang="en"><head><title>T</title></head><body>
+           <a id="skip-opacity" class="skip-link sr-only" href="#main">Skip to content</a>
+           <a id="skip-sr-only" class="skip-link sr-only" href="#main">Skip to nav</a>
+           <button id="visible-blocked" type="button">Submit</button>
+           </body></html>"##,
+    );
+    for node in &mut doc.nodes {
+        match node.id_attr() {
+            Some("skip-opacity") => {
+                node.computed = Some(ComputedStyle {
+                    opacity: Some(0.0),
+                    pointer_events: Some("none".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("skip-sr-only") => {
+                node.rect = Some(clearway::ir::Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 1.0,
+                    height: 1.0,
+                });
+                node.computed = Some(ComputedStyle {
+                    overflow_x: Some("hidden".to_owned()),
+                    overflow_y: Some("hidden".to_owned()),
+                    pointer_events: Some("none".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            Some("visible-blocked") => {
+                node.rect = Some(clearway::ir::Rect {
+                    x: 10.0,
+                    y: 10.0,
+                    width: 100.0,
+                    height: 36.0,
+                });
+                node.computed = Some(ComputedStyle {
+                    opacity: Some(1.0),
+                    pointer_events: Some("none".to_owned()),
+                    ..ComputedStyle::default()
+                });
+            }
+            _ => {}
+        }
+    }
+
+    let report = audit_document(&doc, &AuditOptions::default());
+    let fails: Vec<&str> = report
+        .violations
+        .iter()
+        .filter(|v| v.rule_id == "pointer-events-focusable")
+        .map(|v| v.selector.as_str())
+        .collect();
+    assert_eq!(fails, vec!["#visible-blocked"]);
+}

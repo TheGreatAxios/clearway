@@ -382,3 +382,32 @@ fn button_name_aria_command_no_double_count_and_nested_menuitem() {
         vec!["#focusable"]
     );
 }
+
+#[test]
+fn aria_allowed_role_routes_aria_hidden_unfocusable_to_incomplete() {
+    let html = page(
+        r#"<a id="hidden-link" href="/x" role="presentation" tabindex="-1" aria-hidden="true">Hidden</a>
+           <button id="hidden-btn" role="presentation" tabindex="-1" aria-hidden="true">Hidden</button>
+           <div aria-hidden="true"><a id="nested-hidden" href="/y" role="presentation" tabindex="-1">Nested</a></div>
+           <fieldset><legend id="exposed-legend" role="heading">Title</legend></fieldset>
+           <a id="exposed-link" href="/z" role="presentation" tabindex="-1">Exposed</a>"#,
+    );
+    let report = audit_html(&html, &AuditOptions::default());
+    let hard: Vec<&str> = report
+        .violations
+        .iter()
+        .filter(|v| v.rule_id == "aria-allowed-role")
+        .map(|v| v.selector.as_str())
+        .collect();
+    let incomplete: Vec<&str> = report
+        .incomplete
+        .iter()
+        .filter(|v| v.rule_id == "aria-allowed-role")
+        .map(|v| v.selector.as_str())
+        .collect();
+    assert_eq!(hard, vec!["#exposed-legend", "#exposed-link"]);
+    assert_eq!(
+        incomplete,
+        vec!["#hidden-link", "#hidden-btn", "#nested-hidden"]
+    );
+}

@@ -1459,6 +1459,69 @@
       }
 
       /**
+       * Returns `true` if `el` has a non-zero bounding rect that lies entirely
+       * outside a non-scrollable `overflow: hidden|clip` ancestor's bounds.
+       * @param {!Element} el
+       * @param {?{x: number, y: number, width: number, height: number}} rect
+       * @param {?Window} fallbackWin
+       * @return {boolean}
+       */
+      function isClippedByOverflowAncestor(el, rect, fallbackWin) {
+        if (!rect || rect.width <= 0 || rect.height <= 0) {
+          return false;
+        }
+        const ownerWin =
+            (el && el.ownerDocument && el.ownerDocument.defaultView) ||
+            fallbackWin;
+        if (!ownerWin || typeof ownerWin.getComputedStyle !== 'function') {
+          return false;
+        }
+        const elCs = ownerWin.getComputedStyle(el);
+        if (elCs && elCs.position === 'fixed') {
+          return false;
+        }
+        const elLeft = rect.x;
+        const elRight = rect.x + rect.width;
+        const elTop = rect.y;
+        const elBottom = rect.y + rect.height;
+
+        let anc = el.parentElement;
+        let depth = 0;
+        while (anc && anc.nodeType === 1 && depth < 64) {
+          depth++;
+          const cs = ownerWin.getComputedStyle(anc);
+          if (cs) {
+            const ox = (cs.overflowX || cs.overflow || '').trim().toLowerCase();
+            const oy = (cs.overflowY || cs.overflow || '').trim().toLowerCase();
+            const clipX = ox === 'hidden' || ox === 'clip';
+            const clipY = oy === 'hidden' || oy === 'clip';
+            if (clipX || clipY) {
+              const ancRect = readRect(anc);
+              if (ancRect && ancRect.width > 0 && ancRect.height > 0) {
+                const ancLeft = ancRect.x;
+                const ancRight = ancRect.x + ancRect.width;
+                const ancTop = ancRect.y;
+                const ancBottom = ancRect.y + ancRect.height;
+                if (
+                  (clipX &&
+                    (elRight <= ancLeft + 0.5 || elLeft >= ancRight - 0.5)) ||
+                  (clipY &&
+                    (elBottom <= ancTop + 0.5 || elTop >= ancBottom - 0.5))
+                ) {
+                  return true;
+                }
+              }
+            }
+            if (cs.position === 'fixed') {
+              break;
+            }
+          }
+          anc = anc.parentElement;
+        }
+        return false;
+      }
+
+      /**
        * Appends `childId` to the `children` list of `nodes[parentId]`.
        * @param {!Array<!Object>} nodes
        * @param {number} parentId
@@ -1525,6 +1588,13 @@
         const frameMeta = readFrameMetadata(domNode, tag);
         const computed = readComputed(domNode, state.win);
         const rect = readRect(domNode);
+        if (
+          computed &&
+          !computed.is_clipped &&
+          isClippedByOverflowAncestor(domNode, rect, state.win)
+        ) {
+          computed.is_clipped = true;
+        }
         populateVisualBackground(domNode, computed, rect, state.doc, state.win);
         const mediaDuration = readMediaDuration(domNode, tag);
         const id = state.nodes.length;
