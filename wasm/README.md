@@ -6,7 +6,11 @@ Works in browsers, Chrome extensions, Cloudflare Workers, Node, Bun, and Deno.
 
 ## Build
 
+Run from `wasm/`. Set `RUSTFLAGS` with `--remap-path-prefix` so compiled `.wasm` binaries do not embed local filesystem paths:
+
 ```sh
+export RUSTFLAGS="--remap-path-prefix=${HOME}=/build --remap-path-prefix=$(cd .. && pwd)=."
+
 # Bundlers (Vite, webpack, esbuild, Cloudflare Workers)
 wasm-pack build --target bundler
 
